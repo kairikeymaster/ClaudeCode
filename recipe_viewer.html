@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Recipe Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0E1018;
+  --s1:#161A24;
+  --s2:#1D2133;
+  --s3:#242840;
+  --border:rgba(112,75,140,0.25);
+  --border2:rgba(150,83,119,0.4);
+  --text:#E8E6F0;
+  --text2:#A8A4C0;
+  --text3:#686480;
+  --accent:#965377;
+  --accent-h:#b8698f;
+  --teal:#417574;
+  --teal-h:#53c099;
+  --caution:#5aa89a;
+  --critical:#965377;
+  --purple:#704B8C;
+  --blue:#365E8C;
+  --sage:#608869;
+}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* NAV */
+#nav{display:flex;background:var(--s1);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.nav-tab{flex:1;padding:14px 8px;text-align:center;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;user-select:none}
+.nav-tab.active{color:var(--accent-h);border-color:var(--accent)}
+.nav-tab.enabled{color:var(--text2)}
+.nav-tab.enabled:hover{color:var(--text)}
+.nav-tab:not(.enabled):not(.active){pointer-events:none}
+
+/* SECTIONS */
+.section{display:none;padding:24px;max-width:1100px;margin:0 auto}
+.section.visible{display:block}
+
+/* ENTRY */
+#entry-area{width:100%;min-height:280px;background:var(--s2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'Montserrat',sans-serif;font-size:14px;padding:16px;resize:vertical;outline:none;transition:border-color .2s}
+#entry-area:focus{border-color:var(--accent)}
+#entry-area::placeholder{color:var(--text3)}
+#parse-btn{margin-top:14px;padding:12px 32px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:'Montserrat',sans-serif;font-weight:600;font-size:13px;letter-spacing:.06em;cursor:pointer;transition:background .2s}
+#parse-btn:hover{background:var(--accent-h)}
+#parse-btn:disabled{opacity:.5;cursor:not-allowed}
+#progress-wrap{margin-top:16px;height:4px;background:var(--s3);border-radius:2px;display:none;overflow:hidden}
+#progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple),var(--blue));background-size:200% 100%;animation:prog 1.5s linear infinite;width:100%}
+@keyframes prog{0%{background-position:200% 0}100%{background-position:0% 0}}
+#parse-error{margin-top:12px;color:#e87;font-size:13px;display:none}
+
+/* SCALE BADGE */
+.scale-badge{position:fixed;top:56px;right:16px;background:var(--accent);color:#fff;font-size:11px;font-weight:600;letter-spacing:.06em;padding:4px 10px;border-radius:20px;display:none;z-index:200}
+
+/* GROCERY */
+.recipe-title{font-size:22px;font-weight:600;margin-bottom:6px}
+.recipe-subtitle{font-size:13px;color:var(--text2);margin-bottom:20px}
+.servings-row{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.servings-label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)}
+.stepper{display:flex;align-items:center;gap:0;border:1px solid var(--border2);border-radius:8px;overflow:hidden}
+.stepper-btn{width:36px;height:36px;background:var(--s2);border:none;color:var(--text);font-size:18px;cursor:pointer;transition:background .15s}
+.stepper-btn:hover{background:var(--s3)}
+.stepper-num{width:48px;text-align:center;background:var(--s1);font-size:14px;font-weight:500;height:36px;display:flex;align-items:center;justify-content:center}
+.copy-btn{margin-left:auto;padding:8px 16px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;letter-spacing:.05em;cursor:pointer;transition:background .2s,color .2s}
+.copy-btn:hover{background:var(--s3);color:var(--text)}
+.ing-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:opacity .2s}
+.ing-row.checked{opacity:.4}
+.ing-check{width:16px;height:16px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s}
+.ing-row.checked .ing-check{background:var(--accent);border-color:var(--accent)}
+.ing-check-mark{width:8px;height:8px;border-right:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(45deg) translate(-1px,-2px);opacity:0;transition:opacity .15s}
+.ing-row.checked .ing-check-mark{opacity:1}
+.ing-label{flex:1;font-size:14px;transition:text-decoration .2s}
+.ing-row.checked .ing-label{text-decoration:line-through}
+.ing-qty{font-size:13px;font-weight:500;color:var(--text2);min-width:60px;text-align:right}
+
+/* MISE */
+.section-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.advance-block{border-left:3px solid var(--caution);background:var(--s2);border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:20px}
+.advance-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--caution);margin-bottom:8px}
+.advance-item{font-size:13px;color:var(--text2);margin-bottom:6px;padding-left:12px;position:relative}
+.advance-item::before{content:'•';position:absolute;left:0;color:var(--caution)}
+.mise-block{padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:flex-start;gap:10px;transition:opacity .2s}
+.mise-block.checked{opacity:.4}
+.mise-block.checked .mise-text{text-decoration:line-through}
+.tool-row{padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:10px;transition:opacity .2s}
+.tool-row.checked{opacity:.4}
+.tool-row.checked .tool-label{text-decoration:line-through}
+.tool-label{font-size:14px}
+.mise-text{font-size:14px;flex:1}
+.mise-sub{font-size:12px;color:var(--text3);margin-top:3px}
+.section-divider{border:none;border-top:1px solid var(--border);margin:24px 0}
+.continue-btn{margin-top:20px;padding:12px 28px;background:var(--teal);border:none;border-radius:8px;color:#fff;font-family:'Montserrat',sans-serif;font-weight:600;font-size:13px;letter-spacing:.06em;cursor:pointer;transition:background .2s}
+.continue-btn:hover{background:var(--teal-h)}
+.gate-warn{display:none;margin-top:10px;font-size:13px;color:var(--caution);padding:10px;background:rgba(65,117,116,.1);border-radius:6px;border-left:3px solid var(--caution)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.unchecked-pulse{animation:pulse .5s 3}
+
+/* STEPS */
+#steps-layout{display:flex;gap:24px;align-items:flex-start}
+#step-col{flex:1;min-width:0}
+#sidebar{width:300px;flex-shrink:0;display:none;position:sticky;top:60px;max-height:calc(100vh - 80px);overflow-y:auto}
+
+.step-card{border-radius:12px;border:1px solid var(--border);background:var(--s2);margin-bottom:12px;cursor:pointer;transition:all .25s ease-out;position:relative;overflow:hidden}
+.step-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.step-card.att-normal::before{background:var(--teal)}
+.step-card.att-caution::before{background:var(--caution)}
+.step-card.att-critical::before{background:var(--critical)}
+.step-card.active{background:var(--s3);border-color:var(--border2)}
+.step-card-inner{padding:16px 16px 16px 20px}
+.step-num{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.step-text{line-height:1.6;font-weight:300;font-size:13px;color:var(--text2);transition:all .2s}
+.step-card.active .step-text{font-weight:500;font-size:clamp(1rem,1.8vw,1.1rem);color:var(--text)}
+.step-card.near .step-text{font-size:13.5px;color:var(--text2)}
+
+.chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid;margin:0 2px;transition:opacity .2s,text-decoration .2s;user-select:none}
+.chip.struck{opacity:.4;text-decoration:line-through}
+.colored-text{font-weight:500}
+
+.tooltip-wrap{display:inline;position:relative}
+.tooltip-trigger{border-bottom:1px dotted var(--text3);cursor:help}
+.tooltip-box{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--s1);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text);width:220px;z-index:300;opacity:0;pointer-events:none;transition:opacity .15s;text-align:left;font-weight:400}
+.tooltip-wrap:hover .tooltip-box,.tooltip-wrap.open .tooltip-box{opacity:1;pointer-events:auto}
+
+/* TIMER */
+.timer-inline{display:inline-flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:6px 12px;margin-top:8px;font-size:13px}
+.timer-display{font-weight:600;font-family:monospace;font-size:14px;min-width:50px}
+.timer-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--text2);padding:2px 8px;font-size:11px;cursor:pointer;font-family:'Montserrat',sans-serif;transition:background .15s}
+.timer-btn:hover{background:var(--s3)}
+
+/* FLOATING TIMERS */
+#float-timers{position:fixed;bottom:70px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:500}
+.float-pill{background:var(--s1);border:1px solid var(--accent);border-radius:20px;padding:6px 14px;font-size:12px;display:flex;align-items:center;gap:8px;transition:all .2s}
+.float-pill.done{border-color:var(--teal);animation:pulse-once .5s}
+@keyframes pulse-once{0%,100%{opacity:1}50%{opacity:.3}}
+.float-label{color:var(--text2);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.float-time{font-weight:600;font-family:monospace;color:var(--text);min-width:44px}
+.float-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 2px}
+
+/* NAV BTNS */
+.step-nav-row{display:flex;gap:10px;margin-top:16px}
+.nav-btn{padding:10px 20px;border-radius:8px;border:none;font-family:'Montserrat',sans-serif;font-weight:600;font-size:12px;letter-spacing:.06em;cursor:pointer;transition:background .2s}
+.nav-btn.primary{background:var(--accent);color:#fff}
+.nav-btn.primary:hover{background:var(--accent-h)}
+.nav-btn.secondary{background:var(--s2);color:var(--text2);border:1px solid var(--border)}
+.nav-btn.secondary:hover{background:var(--s3)}
+
+/* SIDEBAR CARDS */
+.sb-card{background:var(--s2);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;position:relative}
+.sb-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.sb-card-head{padding:12px 14px 12px 18px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.sb-sum{flex:1;font-size:12px;font-weight:500;color:var(--text2)}
+.sb-expand{font-size:10px;color:var(--text3);transition:transform .2s}
+.sb-card.open .sb-expand{transform:rotate(180deg)}
+.sb-body{display:none;padding:0 14px 12px 18px;font-size:12px;color:var(--text);line-height:1.6}
+.sb-card.open .sb-body{display:block}
+.sb-done{margin-top:8px;padding:6px 14px;background:var(--teal);border:none;border-radius:6px;color:#fff;font-family:'Montserrat',sans-serif;font-weight:600;font-size:11px;cursor:pointer;transition:background .2s}
+.sb-done:hover{background:var(--teal-h)}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+
+/* KEYBOARD HINT */
+#kb-hint{position:fixed;bottom:16px;left:16px;background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--text3);line-height:1.8;z-index:400}
+#kb-hint strong{color:var(--text2)}
+#kb-hint{display:none}
+
+/* RAW OVERLAY */
+#raw-btn{position:fixed;bottom:16px;right:16px;width:36px;height:36px;border-radius:50%;background:var(--s2);border:1px solid var(--border);color:var(--text2);font-size:14px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:400;transition:background .2s}
+#raw-btn:hover{background:var(--s3)}
+#raw-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;display:none;align-items:center;justify-content:center}
+#raw-overlay.open{display:flex}
+.raw-modal{background:var(--s1);border:1px solid var(--border);border-radius:12px;width:90%;max-width:700px;max-height:80vh;display:flex;flex-direction:column}
+.raw-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.raw-title{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2)}
+.raw-close{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer}
+.raw-body{padding:16px 18px;overflow-y:auto;font-family:monospace;font-size:12px;line-height:1.7;color:var(--text2);white-space:pre-wrap}
+</style>
+</head>
+<body>
+
+<div id="nav">
+  <div class="nav-tab active" data-sec="0" onclick="goSection(0)">1. Recipe</div>
+  <div class="nav-tab" data-sec="1" onclick="goSection(1)">2. Grocery</div>
+  <div class="nav-tab" data-sec="2" onclick="goSection(2)">3. Mise</div>
+  <div class="nav-tab" data-sec="3" onclick="goSection(3)">4. Cook</div>
+</div>
+
+<div class="scale-badge" id="scale-badge">1×</div>
+
+<!-- SECTION 1 -->
+<div class="section visible" id="sec-0">
+  <div style="max-width:700px;margin:0 auto">
+    <p style="font-size:20px;font-weight:600;margin-bottom:6px">Paste a recipe</p>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Paste any raw recipe text — from a blog, cookbook, or your own notes.</p>
+    <textarea id="entry-area" placeholder="Paste your recipe here…&#10;&#10;Include the title, ingredients, and instructions. The AI will parse it into an interactive cooking guide."></textarea>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button id="parse-btn" onclick="parseRecipe()">Parse recipe →</button>
+      <span style="font-size:12px;color:var(--text3)">Powered by Claude</span>
+    </div>
+    <div id="progress-wrap"><div id="progress-bar"></div></div>
+    <div id="parse-error"></div>
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="section" id="sec-1">
+  <div class="recipe-title" id="g-title"></div>
+  <div class="recipe-subtitle" id="g-sub"></div>
+  <div class="servings-row">
+    <span class="servings-label">Servings</span>
+    <div class="stepper">
+      <button class="stepper-btn" onclick="adjServings(-1)">−</button>
+      <div class="stepper-num" id="srv-num">4</div>
+      <button class="stepper-btn" onclick="adjServings(1)">+</button>
+    </div>
+    <button class="copy-btn" onclick="copyIngredients()">Copy list</button>
+  </div>
+  <div id="grocery-list"></div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="section" id="sec-2">
+  <div id="advance-section"></div>
+  <div class="section-label">Tools & appliances</div>
+  <div id="tools-list"></div>
+  <hr class="section-divider">
+  <div class="section-label">Ingredient prep</div>
+  <div id="mise-list"></div>
+  <div class="gate-warn" id="gate-warn">Some prep items aren't checked — continue anyway? Click again to proceed.</div>
+  <button class="continue-btn" id="goto-cook" onclick="miseGate()">Start cooking →</button>
+</div>
+
+<!-- SECTION 4 -->
+<div class="section" id="sec-3">
+  <div id="steps-layout">
+    <div id="step-col">
+      <div id="steps-container"></div>
+      <div class="step-nav-row" id="step-nav">
+        <button class="nav-btn secondary" onclick="moveStep(-1)">← Back</button>
+        <button class="nav-btn primary" onclick="moveStep(1)">Next →</button>
+      </div>
+    </div>
+    <div id="sidebar">
+      <div class="sidebar-label">Ongoing</div>
+      <div id="sidebar-cards"></div>
+    </div>
+  </div>
+</div>
+
+<div id="float-timers"></div>
+<div id="kb-hint"><strong>↑↓</strong> or <strong>J/K</strong> navigate · <strong>Enter/Space</strong> next</div>
+<button id="raw-btn" title="View original recipe" onclick="toggleRaw()">≡</button>
+<div id="raw-overlay" onclick="closeRaw(event)">
+  <div class="raw-modal">
+    <div class="raw-header">
+      <span class="raw-title">Original recipe</span>
+      <button class="raw-close" onclick="closeRaw()">✕</button>
+    </div>
+    <div class="raw-body" id="raw-text"></div>
+  </div>
+</div>
+
+<script>
+let recipe=null, scale=1, baseServings=4, activeStep=0;
+let miseGateClicked=false, ingColors={};
+let timerStates={}, floatTimers={}, timerIntervals={};
+let pinnedSteps=[];
+let groceryChecked={}, miseChecked={}, toolChecked={};
+
+// UTILS
+function frac(n){
+  if(n===null||n===undefined) return '';
+  const sign=n<0?'-':'';n=Math.abs(n);
+  const whole=Math.floor(n), rem=n-whole;
+  if(rem<0.01) return sign+(whole||'');
+  const fracs=[[1,2],[1,3],[2,3],[1,4],[3,4],[1,8],[3,8],[5,8],[7,8],[1,6],[5,6]];
+  let best=null,bestDiff=99;
+  for(const [p,q] of fracs){const diff=Math.abs(rem-p/q);if(diff<bestDiff){bestDiff=diff;best=[p,q]}}
+  if(bestDiff>0.06) return sign+(n).toFixed(1);
+  const [p,q]=best;
+  const fStr=p===1&&q===2?'½':p===1&&q===3?'⅓':p===2&&q===3?'⅔':p===1&&q===4?'¼':p===3&&q===4?'¾':p===1&&q===8?'⅛':p===3&&q===8?'⅜':p===5&&q===8?'⅝':p===7&&q===8?'⅞':p+'/'+q;
+  return sign+(whole?whole+' ':'')+fStr;
+}
+function scaleQty(qty){if(qty===null) return null; return qty*scale}
+function displayQty(qty,unit){
+  if(qty===null) return unit||'';
+  return frac(scaleQty(qty))+(unit?' '+unit:'');
+}
+function htmlEnc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// SECTION NAV
+function goSection(i){
+  if(i>0&&!recipe) return;
+  document.querySelectorAll('.section').forEach((s,j)=>s.classList.toggle('visible',j===i));
+  document.querySelectorAll('.nav-tab').forEach((t,j)=>{
+    t.classList.remove('active');
+    if(j===i) t.classList.add('active');
+  });
+  if(i===3){document.getElementById('kb-hint').style.display='block';}
+  else{document.getElementById('kb-hint').style.display='none';}
+}
+function enableTabs(upTo){
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>{
+    if(i<=upTo){t.classList.add('enabled');}
+  });
+}
+
+// SCALE BADGE
+function updateScaleBadge(){
+  const b=document.getElementById('scale-badge');
+  if(scale===1){b.style.display='none';}
+  else{b.style.display='block';b.textContent=scale+'×';}
+}
+
+// PARSE
+async function parseRecipe(){
+  const raw=document.getElementById('entry-area').value.trim();
+  if(!raw){alert('Please paste a recipe first.');return;}
+  const btn=document.getElementById('parse-btn');
+  btn.disabled=true;
+  const pw=document.getElementById('progress-wrap');
+  pw.style.display='block';
+  document.getElementById('parse-error').style.display='none';
+  
+  const sys=`You are a recipe parsing assistant. Given a raw recipe text, return ONLY a valid JSON object with no prose, no markdown fences, and no commentary.`;
+  const userPrompt=`Parse the following recipe and return a JSON object matching this schema exactly:
+
+{
+  "title": string,
+  "servings": number,
+  "ingredients": [{"id":string,"label":string,"short":string,"quantity":number|null,"unit":string|null,"color":string}],
+  "tools": [string],
+  "advance_prep": [string],
+  "mise_en_place": [{"group":[string],"vessel":string|null,"note":string|null}],
+  "steps": [{
+    "id":string,"type":"normal"|"meanwhile"|"when","concurrent_with":string|null,
+    "pin_after":boolean,"attention":"normal"|"caution"|"critical",
+    "text":string,"full_text":string,
+    "tooltips":[{"trigger":string,"content":string}],
+    "timer":{"seconds":number,"label":string}|null,
+    "ingredient_mentions":[{"ingredient_id":string,"quantity":number|null,"unit":string|null,"additive":boolean}],
+    "sidebar_summary":string|null
+  }]
+}
+
+Color palette for ingredient assignment (one color per ingredient, never share):
+#fa7070 #e98452 #feb64a #eed337 #d2d222 #98c652 #6fbb77 #53c099 #54adb9 #5E9BE2 #8373F1 #B564D2 #cb6cb4 #d96199 #DF5A7A
+
+Assignment rules:
+1. ROYGBIV correspondence first (tomatoes→#fa7070, carrots→#e98452, lemons→#eed337, etc.)
+2. Fill remaining to maximize hue distribution.
+3. Reuse only after all 15 exhausted.
+
+In step text: remove articles, shorten ingredient names, move qualifiers to tooltips, split into more steps rather than fewer.
+Unit normalization: tablespoon/tbsp→tb., teaspoon/tsp→ts., cup→c., minute(s)→m., second(s)→s.
+Mark ingredient_mentions additive=true only when combining into something.
+
+Now parse this recipe:
+${raw}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:4000,
+        system:sys,
+        messages:[{role:'user',content:userPrompt}]
+      })
+    });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error?.message||'API error');
+    let txt=data.content.map(c=>c.text||'').join('');
+    txt=txt.replace(/```json|```/g,'').trim();
+    recipe=JSON.parse(txt);
+    baseServings=recipe.servings||4;
+    scale=1;
+    recipe.ingredients.forEach(ing=>{ingColors[ing.id]=ing.color;});
+    document.getElementById('raw-text').textContent=raw;
+    renderGrocery();renderMise();renderSteps();
+    enableTabs(3);
+    document.getElementById('raw-btn').style.display='flex';
+    pw.style.display='none';
+    btn.disabled=false;
+    goSection(1);
+  }catch(e){
+    pw.style.display='none';
+    btn.disabled=false;
+    const err=document.getElementById('parse-error');
+    err.style.display='block';
+    err.textContent='Error: '+e.message;
+  }
+}
+
+// GROCERY
+function renderGrocery(){
+  document.getElementById('g-title').textContent=recipe.title;
+  document.getElementById('g-sub').textContent='Base: '+baseServings+' servings';
+  document.getElementById('srv-num').textContent=Math.round(baseServings*scale);
+  const el=document.getElementById('grocery-list');
+  el.innerHTML='';
+  recipe.ingredients.forEach(ing=>{
+    const row=document.createElement('div');
+    row.className='ing-row'+(groceryChecked[ing.id]?' checked':'');
+    row.innerHTML=`<div class="ing-check"><div class="ing-check-mark"></div></div><div class="ing-label">${htmlEnc(ing.label)}</div><div class="ing-qty" id="gq-${ing.id}">${displayQty(ing.quantity,ing.unit)}</div>`;
+    row.onclick=()=>{groceryChecked[ing.id]=!groceryChecked[ing.id];row.classList.toggle('checked',groceryChecked[ing.id]);};
+    el.appendChild(row);
+  });
+}
+function updateGroceryQtys(){
+  recipe.ingredients.forEach(ing=>{
+    const el=document.getElementById('gq-'+ing.id);
+    if(el) el.textContent=displayQty(ing.quantity,ing.unit);
+  });
+}
+function adjServings(d){
+  const newS=Math.max(0.5,baseServings*scale+d);
+  scale=Math.round((newS/baseServings)*10)/10;
+  document.getElementById('srv-num').textContent=Math.round(baseServings*scale);
+  updateScaleBadge();
+  updateGroceryQtys();
+  updateMiseQtys();
+  updateStepQtys();
+}
+function copyIngredients(){
+  const lines=recipe.ingredients.map(ing=>displayQty(ing.quantity,ing.unit)+' '+ing.label);
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+    const b=document.querySelector('.copy-btn');
+    b.textContent='Copied!';setTimeout(()=>b.textContent='Copy list',1500);
+  });
+}
+
+// MISE
+function renderMise(){
+  const adv=document.getElementById('advance-section');
+  adv.innerHTML='';
+  if(recipe.advance_prep&&recipe.advance_prep.length){
+    const b=document.createElement('div');
+    b.className='advance-block';
+    b.innerHTML='<div class="advance-title">Do before you start</div>'+recipe.advance_prep.map(a=>`<div class="advance-item">${htmlEnc(a)}</div>`).join('');
+    adv.appendChild(b);
+    const div=document.createElement('hr');div.className='section-divider';adv.appendChild(div);
+  }
+  const tl=document.getElementById('tools-list');
+  tl.innerHTML='';
+  (recipe.tools||[]).forEach((t,i)=>{
+    const row=document.createElement('div');
+    row.className='tool-row'+(toolChecked[i]?' checked':'');
+    row.innerHTML=`<div class="ing-check"><div class="ing-check-mark"></div></div><div class="tool-label">${htmlEnc(t)}</div>`;
+    row.onclick=()=>{toolChecked[i]=!toolChecked[i];row.classList.toggle('checked',toolChecked[i]);};
+    tl.appendChild(row);
+  });
+  const ml=document.getElementById('mise-list');
+  ml.innerHTML='';
+  (recipe.mise_en_place||[]).forEach((m,i)=>{
+    const ings=m.group.map(id=>{
+      const ing=recipe.ingredients.find(x=>x.id===id);
+      if(!ing) return id;
+      const c=ing.color;
+      return `<span class="colored-text" style="color:${c}" id="mq-${id}-${i}">${displayQty(ing.quantity,ing.unit)} ${htmlEnc(ing.short)}</span>`;
+    }).join(', ');
+    const sub=(m.vessel?'In '+m.vessel:'')+(m.note?' — '+m.note:'');
+    const row=document.createElement('div');
+    row.className='mise-block'+(miseChecked[i]?' checked':'');
+    row.innerHTML=`<div class="ing-check"><div class="ing-check-mark"></div></div><div class="mise-text">${ings}${sub?`<div class="mise-sub">${htmlEnc(sub)}</div>`:''}</div>`;
+    row.onclick=()=>{miseChecked[i]=!miseChecked[i];row.classList.toggle('checked',miseChecked[i]);};
+    ml.appendChild(row);
+  });
+}
+function updateMiseQtys(){
+  (recipe.mise_en_place||[]).forEach((m,i)=>{
+    m.group.forEach(id=>{
+      const ing=recipe.ingredients.find(x=>x.id===id);
+      if(!ing) return;
+      const el=document.getElementById(`mq-${id}-${i}`);
+      if(el) el.textContent=displayQty(ing.quantity,ing.unit)+' '+ing.short;
+    });
+  });
+}
+function miseGate(){
+  const unchecked=document.querySelectorAll('#mise-list .mise-block:not(.checked)');
+  if(unchecked.length>0&&!miseGateClicked){
+    const w=document.getElementById('gate-warn');
+    w.style.display='block';
+    miseGateClicked=true;
+    unchecked.forEach(el=>{el.classList.add('unchecked-pulse');setTimeout(()=>el.classList.remove('unchecked-pulse'),1500);});
+    return;
+  }
+  miseGateClicked=false;
+  document.getElementById('gate-warn').style.display='none';
+  goSection(3);
+}
+
+// STEPS
+let chipStates={};
+function renderSteps(){
+  const cont=document.getElementById('steps-container');
+  cont.innerHTML='';
+  pinnedSteps=[];
+  activeStep=0;
+  recipe.steps.forEach((step,i)=>{
+    chipStates[step.id]={};
+    const card=document.createElement('div');
+    card.className='step-card att-'+step.attention+(i===0?' active':'');
+    card.id='scard-'+step.id;
+    card.onclick=()=>clickStep(i);
+    const body=buildStepBody(step,true);
+    card.innerHTML=`<div class="step-card-inner"><div class="step-num">Step ${i+1}${step.type!=='normal'?' · '+step.type.toUpperCase():''}</div><div class="step-text" id="stext-${step.id}">${body}</div>${step.timer?buildTimerHtml(step):''}${i===0&&recipe.steps.length>1?'<div style="margin-top:10px;font-size:11px;color:var(--text3)">Tap card or press Enter to advance</div>':''}</div>`;
+    cont.appendChild(card);
+  });
+  updateStepVisibility();
+}
+function buildStepBody(step,forCard){
+  let txt=step.text;
+  const tMap={};
+  (step.tooltips||[]).forEach(t=>{tMap[t.trigger]=t.content;});
+  const mentions={};
+  (step.ingredient_mentions||[]).forEach(m=>{mentions[m.ingredient_id]=m;});
+  
+  // Replace ingredient mentions with colored chips/text
+  let html=htmlEnc(txt);
+  // Apply tooltips
+  Object.entries(tMap).forEach(([trig,cont])=>{
+    const enc=htmlEnc(trig);
+    html=html.replace(new RegExp(enc.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'),
+      `<span class="tooltip-wrap"><span class="tooltip-trigger">${enc}</span><div class="tooltip-box">${htmlEnc(cont)}</div></span>`);
+  });
+  // Color ingredient short names
+  Object.values(mentions).forEach(m=>{
+    const ing=recipe.ingredients.find(x=>x.id===m.ingredient_id);
+    if(!ing) return;
+    const c=ing.color;
+    const enc=htmlEnc(ing.short);
+    if(m.additive){
+      const qStr=m.quantity?frac(m.quantity*(scale||1))+(m.unit?' '+m.unit:''):ing.short;
+      const chipId='chip-'+step.id+'-'+ing.id;
+      html=html.replace(new RegExp(enc.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'),
+        `<span class="chip" id="${chipId}" style="background:${c}22;border-color:${c};color:${c}" onclick="event.stopPropagation();toggleChip('${chipId}')">${qStr?htmlEnc(qStr)+' ':''}${enc}</span>`);
+    } else {
+      html=html.replace(new RegExp(enc.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'),
+        `<span class="colored-text" style="color:${c}">${enc}</span>`);
+    }
+  });
+  return html;
+}
+function toggleChip(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.toggle('struck');
+}
+function buildTimerHtml(step){
+  const t=step.timer;
+  const id='tmr-'+step.id;
+  if(!timerStates[step.id]) timerStates[step.id]={rem:t.seconds,running:false,done:false};
+  return `<div class="timer-inline" id="${id}">
+    <span class="timer-display" id="td-${step.id}">${fmtTime(t.seconds)}</span>
+    <button class="timer-btn" onclick="event.stopPropagation();timerToggle('${step.id}')">▶ Start</button>
+    <button class="timer-btn" onclick="event.stopPropagation();timerReset('${step.id}')">↺</button>
+    <button class="timer-btn" onclick="event.stopPropagation();timerAdd('${step.id}',60)">+1m</button>
+  </div>`;
+}
+function fmtTime(s){const m=Math.floor(s/60),sec=s%60;return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')}
+function timerToggle(sid){
+  const ts=timerStates[sid];if(!ts) return;
+  if(ts.done){timerReset(sid);return;}
+  ts.running=!ts.running;
+  const btn=document.querySelector(`#tmr-${sid} .timer-btn`);
+  if(btn) btn.textContent=ts.running?'⏸ Pause':'▶ Start';
+  if(ts.running){
+    timerIntervals[sid]=setInterval(()=>timerTick(sid),1000);
+  } else {clearInterval(timerIntervals[sid]);}
+  updateFloatPill(sid);
+}
+function timerTick(sid){
+  const ts=timerStates[sid];if(!ts||!ts.running) return;
+  ts.rem=Math.max(0,ts.rem-1);
+  const el=document.getElementById('td-'+sid);
+  if(el) el.textContent=fmtTime(ts.rem);
+  updateFloatPill(sid);
+  if(ts.rem<=0){ts.running=false;ts.done=true;clearInterval(timerIntervals[sid]);timerDone(sid);}
+}
+function timerReset(sid){
+  clearInterval(timerIntervals[sid]);
+  const step=recipe.steps.find(s=>s.id===sid);
+  if(!step||!step.timer) return;
+  timerStates[sid]={rem:step.timer.seconds,running:false,done:false};
+  const el=document.getElementById('td-'+sid);
+  if(el) el.textContent=fmtTime(step.timer.seconds);
+  const btn=document.querySelector(`#tmr-${sid} .timer-btn`);
+  if(btn) btn.textContent='▶ Start';
+  updateFloatPill(sid);
+}
+function timerAdd(sid,secs){
+  const ts=timerStates[sid];if(!ts) return;
+  ts.rem+=secs;ts.done=false;
+  const el=document.getElementById('td-'+sid);
+  if(el) el.textContent=fmtTime(ts.rem);
+  updateFloatPill(sid);
+}
+function timerDone(sid){
+  const pill=document.getElementById('fpill-'+sid);
+  if(pill){pill.classList.add('done');const ft=document.querySelector(`#fpill-${sid} .float-time`);if(ft)ft.textContent='Done!';}
+}
+function floatTimer(sid){
+  const step=recipe.steps.find(s=>s.id===sid);
+  if(!step||!step.timer||floatTimers[sid]) return;
+  floatTimers[sid]=true;
+  const ts=timerStates[sid]||{rem:step.timer.seconds,running:false,done:false};
+  const wrap=document.getElementById('float-timers');
+  const pill=document.createElement('div');
+  pill.className='float-pill';pill.id='fpill-'+sid;
+  pill.innerHTML=`<span class="float-label">${htmlEnc(step.timer.label)}</span><span class="float-time" id="ft-${sid}">${fmtTime(ts.rem)}</span><button class="timer-btn" onclick="timerToggle('${sid}')" style="font-size:10px;padding:2px 6px">▶</button><button class="timer-btn" onclick="timerAdd('${sid}',60)" style="font-size:10px;padding:2px 6px">+1m</button><button class="float-close" onclick="removeFloatPill('${sid}')">✕</button>`;
+  wrap.appendChild(pill);
+  // redirect display updates
+  timerIntervals['float-'+sid]=setInterval(()=>{
+    const ft=document.getElementById('ft-'+sid);
+    if(ft&&timerStates[sid]) ft.textContent=fmtTime(timerStates[sid].rem);
+  },500);
+}
+function updateFloatPill(sid){
+  const ft=document.getElementById('ft-'+sid);
+  if(ft&&timerStates[sid]) ft.textContent=fmtTime(timerStates[sid].rem);
+}
+function removeFloatPill(sid){
+  const pill=document.getElementById('fpill-'+sid);
+  if(pill) pill.remove();
+  clearInterval(timerIntervals['float-'+sid]);
+  delete floatTimers[sid];
+}
+
+// STEP NAV
+function clickStep(i){
+  if(i===activeStep) moveStep(1);
+  else{activeStep=i;updateStepVisibility();}
+}
+function moveStep(d){
+  const newI=activeStep+d;
+  if(newI<0||newI>=recipe.steps.length) return;
+  const leaving=recipe.steps[activeStep];
+  if(d>0&&leaving.pin_after&&!pinnedSteps.includes(leaving.id)){
+    pinnedSteps.push(leaving.id);
+    addSidebarCard(leaving);
+    if(leaving.timer&&timerStates[leaving.id]) floatTimer(leaving.id);
+    document.getElementById('sidebar').style.display='block';
+    document.getElementById('step-col').style.flex='1';
+  }
+  activeStep=newI;
+  updateStepVisibility();
+}
+function updateStepVisibility(){
+  recipe.steps.forEach((step,i)=>{
+    const card=document.getElementById('scard-'+step.id);
+    if(!card) return;
+    card.classList.remove('active','near');
+    const diff=i-activeStep;
+    if(diff===0) card.classList.add('active');
+    else if(Math.abs(diff)<=2) card.classList.add('near');
+    card.style.opacity=diff<-3?'0.2':diff<0?'0.5':diff===0?'1':diff<=2?'0.65':'0.3';
+  });
+  const card=document.getElementById('scard-'+recipe.steps[activeStep]?.id);
+  if(card) card.scrollIntoView({behavior:'smooth',block:'nearest'});
+  const nav=document.getElementById('step-nav');
+  if(activeStep>=recipe.steps.length-1){
+    nav.innerHTML='<button class="nav-btn secondary" onclick="moveStep(-1)">← Back</button><span style="padding:10px 16px;font-size:13px;color:var(--teal-h);font-weight:600">🎉 Done!</span>';
+  } else {
+    nav.innerHTML='<button class="nav-btn secondary" onclick="moveStep(-1)">← Back</button><button class="nav-btn primary" onclick="moveStep(1)">Next →</button>';
+  }
+}
+function updateStepQtys(){} // quantities are baked into text at render time; would need re-render for full reactivity
+
+// SIDEBAR
+function addSidebarCard(step){
+  const cards=document.getElementById('sidebar-cards');
+  const c=document.createElement('div');
+  c.className='sb-card';c.id='sbcard-'+step.id;
+  c.innerHTML=`<div class="sb-card-head" onclick="toggleSbCard('${step.id}')"><span class="sb-sum">${htmlEnc(step.sidebar_summary||step.text.slice(0,60)+'…')}</span><span class="sb-expand">▾</span></div><div class="sb-body"><div id="sbb-${step.id}">${buildStepBody(step,false)}</div><button class="sb-done" onclick="dismissSbCard('${step.id}')">Done? ✓</button></div>`;
+  cards.appendChild(c);
+}
+function toggleSbCard(sid){
+  const c=document.getElementById('sbcard-'+sid);
+  if(c) c.classList.toggle('open');
+}
+function dismissSbCard(sid){
+  const c=document.getElementById('sbcard-'+sid);
+  if(c) c.remove();
+  pinnedSteps=pinnedSteps.filter(x=>x!==sid);
+  if(pinnedSteps.length===0) document.getElementById('sidebar').style.display='none';
+}
+
+// KEYBOARD
+document.addEventListener('keydown',e=>{
+  if(!recipe||!document.getElementById('sec-3').classList.contains('visible')) return;
+  if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if(e.key==='ArrowDown'||e.key==='j') moveStep(1);
+  else if(e.key==='ArrowUp'||e.key==='k') moveStep(-1);
+  else if(e.key==='Enter'||e.key===' ') moveStep(1);
+  else if(e.key==='Escape') closeRaw();
+});
+
+// RAW OVERLAY
+function toggleRaw(){
+  document.getElementById('raw-overlay').classList.toggle('open');
+}
+function closeRaw(e){
+  if(!e||e.target===document.getElementById('raw-overlay')) document.getElementById('raw-overlay').classList.remove('open');
+}
+
+// TOOLTIP TOUCH
+document.addEventListener('click',e=>{
+  const tw=e.target.closest('.tooltip-wrap');
+  document.querySelectorAll('.tooltip-wrap.open').forEach(el=>{if(el!==tw) el.classList.remove('open');});
+  if(tw) tw.classList.toggle('open');
+});
+</script>
+</body>
+</html>
