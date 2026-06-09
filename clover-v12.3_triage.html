@@ -1,0 +1,2234 @@
+<!--LOCAL HTML FILE ON GAIA-PRIME IS OUT-OF-DATE BY DEFAULT; UP-TO-DATE VERSION IS ON CLOUDFLARE-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<title>Clover</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: hsl(200, 40%, 15%); --surface: hsl(190, 32%, 22%); --surface2: hsl(185, 28%, 18%);
+    --accent: hsl(170, 45%, 40%); --accent2: hsl(165, 50%, 20%); --accent3: hsl(165, 65%, 35%);
+    --text: hsl(158, 25%, 92%); --muted: hsl(157, 29%, 70%);
+    --border: hsla(158, 43%, 44%, 0.18);
+    --red1: hsl(340, 68%, 62%); --red1-35: hsla(0, 68%, 62%, 0.35); --red1-0: hsla(0, 68%, 62%, 0.08); 
+    --tk: hsl(139, 49%, 72%);  /* Tasks*/
+    --bk: hsl(336, 56%, 76%);  /* Blockers*/
+    --fm: hsl(255, 60%, 76%);  /* Force-Multipliers */
+    --gh: hsl(213, 67%, 75%);  /* Good Habits*/
+    --pl: hsl(75, 67%, 75%);  /* Planning*/
+    --ft: hsl(12, 82%, 75%);  /* Family Tasks*/
+    --in: hsl(158, 9%, 62%);  /* Inbox (shouldn't appear in execution waterfall) */
+    --font: 'Montserrat', sans-serif;
+    font-size: 100%;  /* the "base" — change this one number to rescale everything */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overscroll-behavior: none; }
+  body { display: flex; flex-direction: column; min-height: 90vh; }
+  #header {
+    padding: 13px 16px 10px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  #header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.12em; color: var(--accent2); text-transform: uppercase; }
+  #header-right { display: flex; align-items: center; gap: 10px; }
+  #mode-badge { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  #status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
+  #status-dot.ready { background: var(--tk); }
+  #status-dot.partial { background: var(--fm); }
+  #status-dot.error { background: var(--red1); }
+  #chat { flex: 1; overflow-y: auto; padding: 0px; display: flex; flex-direction: column; }
+  #chat-inner { width: 100%; max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 11px; }
+  .msg { max-width: 92%; line-height: 1.55; margin: 16px; font-size: 0.93rem; font-weight: 400; animation: fadeUp 0.2s ease; }
+  .msg.assistant {
+    align-self: flex-start; background: var(--surface); border: 1px solid var(--border); 
+    max-width: 700px;
+    border-radius: 4px 14px 14px 14px; padding: 11px 14px; color: var(--text); position: relative;
+  }
+  .msg.user {
+    align-self: flex-end; background: var(--accent);
+    max-width: 700px;
+    border-radius: 14px 4px 14px 14px; padding: 9px 13px; color: white;
+  }
+  .msg.sys { align-self: center; font-size: 0.65rem; color: var(--muted); padding: 2px 0; letter-spacing: 0.05em; }
+  .speak-btn {
+    position: absolute; top: 7px; right: 9px; background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 0.69rem; padding: 2px 4px; opacity: 0.4; transition: opacity 0.15s;
+    margin: 5px;
+  }
+  .speak-btn:hover { opacity: 1; }
+  .log-note { display: block; font-size: 0.65rem; color: var(--muted); margin-top: 5px; font-weight: 400; opacity: 0.6; }
+  .log-note.fail { color: var(--fm); opacity: 1; }
+  .copy-btn {
+    display: inline-block; margin-top: 4px; font-size: 0.65rem; color: var(--accent2);
+    background: none; border: 1px solid var(--border); border-radius: 10px;
+    padding: 3px 10px; cursor: pointer; font-family: var(--font); font-weight: 500;
+  }
+  .task-panel { margin-top: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .task-panel-header { padding: 8px 11px; display: flex; align-items: flex-start; justify-content: space-between; cursor: pointer; user-select: none; }
+  .task-label { font-size: 0.65rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+  .task-label.TK { color: var(--tk); }
+  .task-label.BK { color: var(--bk); }
+  .task-label.FM { color: var(--fm); }
+  .task-label.GH { color: var(--gh); }
+  .task-label.PL { color: var(--pl); }
+  .task-label.FT { color: var(--ft); }
+  .task-label.IN { color: var(--in); }  
+  .task-panel-title { font-size: 0.75rem; font-weight: 500; color: var(--text); margin-top: 2px; line-height: 1.4; }
+  .task-due { font-size: 0.65rem; color: var(--red1); margin-top: 2px; font-weight: 500; }
+  .task-chevron { font-size: 0.7rem; color: var(--muted); transition: transform 0.2s; flex-shrink: 0; margin-left: 8px; margin-top: 2px; }
+  .task-chevron.open { transform: rotate(180deg); }
+  .task-panel-body { display: none; padding: 0 11px 10px; border-top: 1px solid var(--border); }
+  .task-panel-body.open { display: block; }
+  .task-notes { font-size: 0.75rem; color: var(--muted); line-height: 1.6; white-space: pre-wrap; margin-top: 8px; font-weight: 400; }
+  .task-notes a { color: var(--accent2); text-decoration: none; }
+  .task-notes a:hover { text-decoration: underline; }
+  .quick-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .qbtn {
+    background: transparent; border: 1px solid var(--border); color: var(--accent2);
+    border-radius: 20px; padding: 5px 12px; font-size: 0.75rem; cursor: pointer;
+    font-family: var(--font); font-weight: 500; transition: background 0.12s;
+  }
+  .qbtn:hover { background: var(--surface2); }
+
+
+
+
+
+  #input-area {
+    padding: 10px 14px 18px; background: var(--surface);
+    border-top: 1px solid var(--border); display: flex; gap: 9px; align-items: flex-end;
+  }
+  #user-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 9px 13px; color: var(--text); font-family: var(--font); font-size: 0.81rem;
+    font-weight: 500; resize: none; min-height: 40px; max-height: 110px; line-height: 1.5; outline: none;
+  }
+  #user-input:focus { border-color: var(--accent); }
+  #user-input::placeholder { color: var(--muted); }
+  #send-btn {
+    background: var(--accent); border: none; border-radius: 10px; width: 40px; height: 40px;
+    cursor: pointer; color: white; font-size: 1.06rem; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: opacity 0.15s;
+  }
+  #send-btn:disabled { opacity: 0.35; cursor: default; }
+  .typing { display: flex; gap: 5px; align-items: center; padding: 2px 0; }
+  .typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: bounce 1s infinite; }
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+
+#triage-btn {
+    background: none; border: 1px solid var(--border); color: var(--accent2);
+    border-radius: 8px; padding: 4px 10px; font-size: 0.65rem; font-family: var(--font);
+    font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+    display: none;
+  }
+  #triage-btn.visible { display: block; }
+  #triage-panel {
+    display: none; flex: 1; overflow-y: auto; padding: 16px;
+    flex-direction: column; gap: 12px;
+    max-width: 700px; align-self: center; width: 100%;
+  }
+  #triage-panel.visible { display: flex; }
+  .triage-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .triage-section h2 { font-size: 0.69rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .file-list { display: flex; flex-direction: column; gap: 6px; }
+  .file-btn {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 8px 12px; font-size: 0.81rem; font-family: var(--font);
+    font-weight: 500; cursor: pointer; text-align: left; transition: border-color 0.15s;
+  }
+  .file-btn:hover { border-color: var(--accent); }
+  .file-btn.selected { border-color: var(--accent); background: var(--border); }
+  .triage-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .triage-action-btn {
+    background: var(--accent); border: none; border-radius: 8px; padding: 8px 16px;
+    color: white; font-size: 0.75rem; font-family: var(--font); font-weight: 600; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .triage-action-btn:disabled { opacity: 0.35; cursor: default; }
+  .triage-action-btn.secondary {
+    background: none; border: 1px solid var(--border); color: var(--accent2);
+  }
+  .triage-status { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+
+  /* ── Voice mode ── */
+  #voice-toggle {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px; padding: 4px 10px; font-size: 0.65rem; font-family: var(--font);
+    font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  #voice-toggle.active { color: var(--accent2); border-color: var(--accent2); }
+
+  #voice-bar {
+    display: none; flex-direction: column; align-items: center; justify-content: flex-end;
+    padding: 18px 20px 24px; gap: 14px; background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  #voice-bar.visible { display: flex; }
+
+  #mic-btn {
+    width: 72px; height: 72px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--accent3); color: white; font-size: 1.75rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 0 0 0 hsla(158, 90%, 69%, 0.007);
+    position: relative;
+/*adding manually to disable context menu*/
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  #mic-btn img {
+    pointer-events: none; /* Ensures clicks pass directly through to the button */
+  }
+
+
+  #mic-btn.listening {
+    background: var(--red1);
+    box-shadow: 0 0 0 10px var(--border);
+    animation: pulse-ring 1.4s ease-out infinite;
+  }
+  #mic-btn.speaking { background: var(--tk); }
+  #mic-btn:disabled { opacity: 0.4; cursor: default; }
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 var(--red1-35); }
+    70%  { box-shadow: 0 0 0 14px var(--red1-0); }
+    100% { box-shadow: 0 0 0 0 var(--red1-0); }
+  }
+
+  #voice-mode-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .vmode-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 20px; padding: 4px 12px; font-size: 0.69rem; font-family: var(--font);
+    font-weight: 600; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s;
+  }
+  .vmode-btn.selected { border-color: var(--accent2); color: var(--accent2); background: var(--border); }
+
+  #voice-status {
+    font-size: 0.69rem; color: var(--muted); letter-spacing: 0.06em; min-height: 16px;
+    text-align: center; font-weight: 500;
+  }
+
+  /* ── Winnow UI ─────────────────────────────────────────────────────────── */
+  .winnow-block {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; outline: none;
+    max-width: 700px; align-self: center; width: 100%;
+    font-size: 0.81rem; line-height: 1.55;
+    display: grid;
+    grid-template-columns: 150px 300px 1fr;
+    column-gap: 16px; row-gap: 12px;
+    align-items: start;
+  }
+  .winnow-block:focus-within { border-color: var(--accent); }
+  /* Full-width rows */
+  .winnow-block > .winnow-item-counter,
+  .winnow-block > .winnow-timer,
+  .winnow-block > .winnow-resolution,
+  .winnow-block > .winnow-actions { grid-column: 1 / -1; }
+  .winnow-item-counter {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent2);
+  }
+  .winnow-item-text {
+    font-size: 0.81rem; color: var(--text); white-space: pre-wrap;
+    word-wrap: break-word; overflow-wrap: anywhere; font-weight: 500;
+  }
+  .winnow-section-label {
+    font-size: 0.65rem; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: none; color: var(--muted); margin-bottom: 6px;
+  }
+  .winnow-section-label.dim { color: hsla(158, 9%, 62%, 0.5); }
+  /* slider — column 1, 150 × 23 */
+  .winnow-slider {
+    position: relative; width: 150px; height: 23px;
+    background: #ffffff0f; border-radius: 12px;
+    cursor: pointer; overflow: hidden; user-select: none; touch-action: none;
+  }
+  .winnow-slider:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .winnow-slider-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: #ffffffeb; border-radius: 12px; width: 0%;
+    transition: width 0.06s linear;
+  }
+  .winnow-slider.untouched .winnow-slider-fill { background: var(--accent1); }
+  /* effort radios — column 3, wrap as needed, tight padding/gap */
+  .winnow-effort { display: flex; gap: 4px; flex-wrap: wrap; }
+  .effort-btn {
+    background: #ffffff14; border: none; color: var(--text);
+    border-radius: 14px; padding: 3px 9px; font-size: 0.75rem; font-weight: 500;
+    font-family: var(--font); cursor: pointer; transition: background 0.12s, color 0.12s;
+  }
+  .effort-btn:hover { background: #ffffff24; }
+  .effort-btn.selected { background: var(--text); color: var(--bg); font-weight: 600; }
+  .effort-btn:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* timer — invisible until last 10s, then bigger + flashing border */
+  .winnow-timer {
+    text-align: center; margin-top: 4px; min-height: 18px; visibility: hidden;
+  }
+  .winnow-timer.show { visibility: visible; }
+  .winnow-timer.dim {
+    visibility: visible; font-size: 0.69rem; color: var(--muted); font-weight: 500;
+  }
+  .winnow-timer-pill {
+    display: inline-block; font-size: 1.75rem; font-weight: 700; color: var(--fm);
+    padding: 6px 22px; border: 3px solid var(--fm); border-radius: 16px;
+    line-height: 1; letter-spacing: 0.04em;
+    animation: timer-flash 1s linear infinite;
+  }
+  @keyframes timer-flash {
+    0%   { border-color: var(--fm); }
+    49%  { border-color: var(--fm); }
+    50%  { border-color: transparent; }
+    99%  { border-color: transparent; }
+    100% { border-color: var(--fm); }
+  }
+  /* resolution + actions */
+  .winnow-resolution {
+    margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--border);
+    font-size: 0.75rem; color: var(--text);
+  }
+  .winnow-resolution .outcome { font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .winnow-resolution .outcome.keep { color: var(--tk); }
+  .winnow-resolution .outcome.abandon { color: var(--red1); }
+  .winnow-resolution .outcome.salvage-band { color: var(--fm); }
+  .winnow-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .winnow-action-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--accent2);
+    border-radius: 18px; padding: 7px 14px; font-size: 0.75rem; font-weight: 500;
+    font-family: var(--font); cursor: pointer; transition: background 0.12s;
+  }
+  .winnow-action-btn:hover { background: var(--border); }
+  .winnow-action-btn:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .winnow-action-btn.primary {
+    background: var(--accent); color: white; border-color: var(--accent);
+  }
+  .winnow-action-btn.primary:hover { background: var(--accent2); }
+  .winnow-action-btn.danger { border-color: var(--red1-35); color: var(--red1); }
+  .winnow-action-btn.danger:hover { background: var(--red1-0); }
+
+  /* hide text input area when voice mode active */
+  #input-area.hidden { display: none; }
+
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>Clover</h1>
+  <div id="header-right">
+    <span id="mode-badge">loading…</span>
+    <button id="voice-toggle">Voice</button>
+    <button id="triage-btn">Triage</button>
+    <div id="status-dot"></div>
+  </div>
+</div>
+<div id="chat"><div id="chat-inner"></div></div>
+
+<div id="triage-panel">
+  <div class="triage-section">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+      <h2 style="margin:0">Select a note to triage</h2>
+      <button class="triage-action-btn secondary" id="back-btn" style="font-size:11px; padding:4px 10px">← Back to chat</button>
+    </div>
+    <div class="file-list" id="file-list"></div>
+  </div>
+  <div class="triage-section" id="triage-controls" style="display:none">
+    <h2>Actions</h2>
+    <div class="triage-status" id="triage-status">Note selected.</div>
+    <div class="triage-actions" style="margin-top:10px">
+      <button class="triage-action-btn" id="winnow-btn" disabled>Winnow</button>
+      <button class="triage-action-btn" id="annotate-btn" disabled>Annotate in Obsidian</button>
+      <button class="triage-action-btn secondary" id="execute-btn" disabled>Done reviewing — execute</button>
+    </div>
+  </div>
+</div>
+
+<div id="voice-bar">
+  <div id="voice-mode-row">
+    <button class="vmode-btn selected" id="vmode-walkie">Walkie-talkie</button>
+    <button class="vmode-btn" id="vmode-convo">Conversation</button>
+  </div>
+  <button id="mic-btn"><img src="https://annasedlacek.com/wp-content/uploads/2026/06/1000021527-removebg-preview.png" width="30px" height="30px"></button>
+  <div id="voice-status">hold to talk</div>
+</div>
+
+<div id="input-area">
+  <textarea id="user-input" placeholder="what's up" rows="1"></textarea>
+  <button id="send-btn">↑</button>
+</div>
+<script>
+  
+// Key is stored in this browser's localStorage, not in the file. Entered once per device.
+let OBSIDIAN_KEY = localStorage.getItem('obsidian_key');
+if (!OBSIDIAN_KEY) {
+  OBSIDIAN_KEY = prompt('Enter your Obsidian Local REST API key (stored only in this browser, on this device):');
+  if (OBSIDIAN_KEY) localStorage.setItem('obsidian_key', OBSIDIAN_KEY);
+}
+  
+const GISTS = {
+  parts:    '37447f4e736f888a718a9e2f0d96c9d6',
+  feedback: 'de9628558a0af0334318eb3a4bd53f93',
+  context:  'd5a46abda4e74f893c3801c2445197e8',
+  triage:   '62483c2459a069064ae9defb6d1da5b4'
+};
+
+// Direct connection to Obsidian Local REST API plugin on this machine.
+// HTTP (not HTTPS) used intentionally — localhost-to-localhost, no encryption needed,
+// and it avoids the self-signed-cert step required by the HTTPS port.
+const OBSIDIAN = {
+  base: 'http://127.0.0.1:27123',
+  key:  OBSIDIAN_KEY
+};
+
+// Helper for every Obsidian call. Returns the Response object so callers can check r.ok
+// and read text/json as needed. Encodes the path so spaces and unicode in note titles work.
+async function obsidian(path, { method = 'GET', body = null, contentType = 'text/markdown' } = {}) {
+  const url = `${OBSIDIAN.base}/vault/${path.split('/').map(encodeURIComponent).join('/')}`;
+  const opts = {
+    method,
+    headers: { 'Authorization': `Bearer ${OBSIDIAN.key}` }
+  };
+  if (body !== null) {
+    opts.headers['Content-Type'] = contentType;
+    opts.body = body;
+  }
+  return fetch(url, opts);
+}
+
+let TASKS = [];
+
+const NOW = new Date();
+let partsContent = '';
+let extraContext = '';
+let history = [];
+let mode = 'triage';
+let cachedSystem = '';
+
+const chat = document.getElementById('chat');
+const chatInner = document.getElementById('chat-inner');
+const inputEl = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+const modeBadge = document.getElementById('mode-badge');
+const statusDot = document.getElementById('status-dot');
+
+function setMode(m) { mode = m; modeBadge.textContent = m + ' mode'; }
+
+function daysUntil(due) { return due ? Math.round((new Date(due) - NOW) / 86400000) : null; }
+function formatDue(due) {
+  const d = daysUntil(due);
+  if (d === null) return null;
+  if (d < 0) return `overdue ${Math.abs(d)}d`;
+  if (d === 0) return 'due today';
+  if (d === 1) return 'due tomorrow';
+  return `due in ${d}d`;
+}
+
+async function fetchGist(id) {
+  const r = await fetch(`https://clover-backend.kairikeymaster.workers.dev/gist?id=${id}`);
+  if (!r.ok) throw new Error('gist fetch failed');
+  const text = await r.text();
+  return { content: text, filename: 'file.md' };
+}
+
+async function fetchTasks() {
+  try {
+    const r = await fetch('https://clover-backend.kairikeymaster.workers.dev/ticktick/alltasks');
+    if (!r.ok) throw new Error('tasks fetch failed');
+    TASKS = await r.json();
+  } catch(e) {
+    console.error('Failed to fetch tasks:', e);
+    addMsg('assistant', `error at fetchTasks function: ${e}`);
+  }
+}
+
+async function checkObsidian() {
+  try {
+    const r = await obsidian('.obsidian/app.json');
+    return r.ok;
+  } catch(e) {
+    if (!shouldAutoVoice()) {
+      addMsg('assistant', `error at checkObsidian function: ${e}`);
+    return false;
+    }
+  }
+}
+
+async function appendFeedback(entry) {
+  try {
+    const r = await fetch('https://clover-backend.kairikeymaster.workers.dev/append-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback: entry })
+    });
+    const d = await r.json();
+    console.log(d);
+    return d.ok;
+  } catch(e) { 
+    addMsg('assistant', `error at appendFeedback function: ${e}`);
+    return false; 
+  }
+}
+
+// Post-validation annotated note text from the most recent annotate run, keyed by selectedFile.
+// Read by executeBtn to diff "proposed" (this) vs "final" (what's in the file after Anna's review).
+const lastProposedNote = {};
+
+// Parses a callout line into a structured object so we can compare meaning, not text.
+// Strips breadcrumb HTML comments (<!-- ... -->) before parsing, so the validator's
+// auto-correction annotations don't cause false "corrected" diffs.
+function parseCallout(line) {
+  if (!line) return { type: 'none' };
+  const stripped = line.replace(/<!--[\s\S]*?-->/g, '').trim();
+  if (!stripped.startsWith('> [!info]')) return { type: 'none' };
+
+  if (stripped.includes('TickTick')) {
+    // New schema: project (~TK/BK/FM/GH/FT), priority (!pN), zero-or-more tags (#HE/#LCL/#HCL/#d0/#d1).
+    const project  = (stripped.match(/\\?~(TK|BK|FM|GH|FT)\b/) || [])[1] || null;
+    const priority = (stripped.match(/\\?!(p0|p1|p3|p5)\b/) || [])[1] || null;
+    const tags     = [...stripped.matchAll(/\\?#(HE|LCL|HCL|d0|d1)\b/g)].map(m => m[1]);
+    return { type: 'ticktick', project, priority, tags };
+    }
+  if (stripped.includes('Obsidian')) {
+    const m = stripped.match(/Obsidian > (.+?) > \\?([*+])(.*?)$/);
+    if (m) {
+      return { type: 'obsidian', folder: m[1].trim(), marker: m[2], title: m[3].trim() };
+    }
+    // Folder-only, no marker.
+    const f = stripped.match(/Obsidian > (.+?)\s*$/);
+    if (f) return { type: 'obsidian', folder: f[1].trim(), marker: null, title: null };
+  }
+  return { type: 'unknown', raw: stripped };
+}
+
+// Deep-compare two parsed callouts. Returns true if they encode the same destination.
+function calloutsMatch(a, b) {
+  if (a.type !== b.type) return false;
+  if (a.type === 'ticktick') {
+    if (a.project !== b.project || a.priority !== b.priority) return false;
+    // Compare tags as a set, not as an ordered list — tag order is not meaningful.
+    const setA = new Set(a.tags || []);
+    const setB = new Set(b.tags || []);
+    if (setA.size !== setB.size) return false;
+    for (const t of setA) if (!setB.has(t)) return false;
+    return true;
+  }
+  if (a.type === 'obsidian') return a.folder === b.folder && a.marker === b.marker && a.title === b.title;
+  return a.type === b.type;
+}
+
+async function appendCorrection(record) {
+  try {
+    const r = await fetch('https://clover-backend.kairikeymaster.workers.dev/append-correction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record })
+    });
+    const d = await r.json();
+    return d.ok;
+  } catch(e) {
+    addMsg('assistant', `error at appendCorrection: ${e}`);
+    return false;
+  }
+}
+
+async function appendRejection(record) {
+  try {
+    const r = await fetch('https://clover-backend.kairikeymaster.workers.dev/append-rejection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record })
+    });
+    const d = await r.json();
+    return d.ok;
+  } catch(e) {
+    addMsg('assistant', `error at appendRejection: ${e}`);
+    return false;
+  }
+}
+
+async function buildSystem() {
+  if (cachedSystem) return cachedSystem;
+  const clientTime = new Date().toLocaleString('en-US', {
+    weekday:'long', month:'long', day:'numeric',
+    hour:'numeric', minute:'2-digit', timeZoneName:'short'
+  });
+  const r = await fetch('https://clover-backend.kairikeymaster.workers.dev/system-prompt', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientTime, voiceMode: voiceActive })
+  });
+  cachedSystem = await r.text();
+  return cachedSystem;
+}
+
+function linkify(t) { return t.replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank">$1</a>'); }
+
+function makeTaskPanel(task) {
+  if (!task) return null;
+    // Reverse-lookup: API project ID → human-readable nickname for label class and text.
+  // Mirrors TRIAGE_SCHEMA.projects in the Worker. Update both if projects change.
+  const PROJECT_NICKNAMES = {
+    'inbox113737974':              'IN',
+    '6a052e798a76f5418c5e8e04':    'TK',
+    '6a080b618a76f5418c5e969d':    'BK',
+    '6a052e858a76f5418c5e8e1e':    'FM',
+    '6a0288b4ebcdfa000000059b':    'GH',
+    '6a028782ebcdfa00000004fd':    'PL',
+    '64c32fff2874c8ee865fe138':    'FT',
+  };
+  const projectKey = PROJECT_NICKNAMES[task.projectId] || '';
+  const panel = document.createElement('div');
+  panel.className = 'task-panel';
+  const dueStr = task.dueDate ? formatDue(task.dueDate) : null;
+  const notes = task.content || task.desc || '';
+  const header = document.createElement('div');
+  header.className = 'task-panel-header';
+  header.innerHTML = `
+    <div>
+      <div class="task-label ${projectKey}">${projectKey}</div>
+      <div class="task-panel-title">${task.title}</div>
+      ${dueStr ? `<div class="task-due">${dueStr}</div>` : ''}
+    </div>
+    <div class="task-chevron">▾</div>`;
+  const body = document.createElement('div');
+  body.className = 'task-panel-body';
+  body.innerHTML = `<div class="task-notes">${notes ? linkify(notes.trim()) : '<em>No notes.</em>'}</div>`;
+  const chev = header.querySelector('.task-chevron');
+  header.addEventListener('click', () => { body.classList.toggle('open'); chev.classList.toggle('open'); });
+  panel.appendChild(header);
+  panel.appendChild(body);
+  return panel;
+}
+
+function addMsg(role, text, task) {
+  const clean = text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/#+\s/g, '')
+    .trim();
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = clean;
+  if (role === 'assistant') {
+    const sp = document.createElement('button');
+    sp.className = 'speak-btn'; sp.title = 'Read aloud';
+    sp.textContent = '▶';
+    sp.onclick = async () => {
+      if (currentAudio && !currentAudio.paused) {
+        stopEverything();
+        sp.textContent = '▶';
+      } else {
+        sp.textContent = '■';
+        await speakReply(clean);
+        sp.textContent = '▶';
+      }
+    };
+    div.appendChild(sp);
+    if (task) { const p = makeTaskPanel(task); if (p) div.appendChild(p); }
+  }
+  chatInner.appendChild(div); chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function addSys(t) {
+  const d = document.createElement('div');
+  d.className = 'msg sys'; d.textContent = t;
+  chatInner.appendChild(d); chat.scrollTop = chat.scrollHeight;
+}
+
+function addTyping() {
+  const d = document.createElement('div');
+  d.className = 'msg assistant'; d.id = 'typ';
+  d.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  chatInner.appendChild(d); chat.scrollTop = chat.scrollHeight;
+  return d;
+}
+
+function addQBtns(el, labels) {
+  const w = document.createElement('div'); w.className = 'quick-btns';
+  labels.forEach(l => {
+    const b = document.createElement('button'); b.className = 'qbtn'; b.textContent = l;
+    b.onclick = () => { w.remove(); send(l); };
+    w.appendChild(b);
+  });
+  el.appendChild(w); chat.scrollTop = chat.scrollHeight;
+}
+
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+}
+
+function isFeedback(t) {
+  return /\b(change that|fix (that|this)|make a note|log this|note (that|this|for later)|don'?t love|not (great|ideal|working|right)|isn'?t working|that'?s (not|annoying)|remember this|flag this|i (hate|dislike)|feels off|not quite|could be better|adjust that|tweak that|that bugged me|that (bothered|annoyed) me|add (this|that) to feedback)\b/i.test(t);
+}
+
+function detectMode(reply) {
+  const r = reply.toLowerCase();
+  if (/one step|first[,: ]+(open|go|click|do)|let'?s start/.test(r)) return 'execution';
+  if (/have you eaten|enough time|headphones|overstimulat/.test(r)) return 'evaluation';
+  return null;
+}
+
+function extractTask(reply) {
+  for (const t of TASKS) {
+    if (t.title && reply.toLowerCase().includes(t.title.toLowerCase().slice(0, 25))) return t;
+  }
+  return null;
+}
+
+// ── Tool definitions for Claude ─────────────────────────────────────────────
+const TOOLS = [
+  {
+    name: 'fetch_bucket',
+    description: 'Fetch the actual tasks inside a specific waterfall priority bucket. Use this whenever you need to see what tasks are pending in a bucket, recommend a task to work on, or check what is queued. The system prompt shows only bucket counts; this tool drills into a specific bucket and returns the task details.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        bucket_index: {
+          type: 'integer',
+          description: 'The bucket number to fetch, between 1 and 9. See the bucket summary in the system prompt for which buckets currently have tasks.'
+        }
+      },
+      required: ['bucket_index']
+    }
+  }
+];
+
+// Executes a tool by name. Returns the tool's result (anything JSON-serializable).
+// Throws on error — the caller wraps errors into tool_result blocks for Claude.
+async function executeTool(name, input) {
+  if (name === 'fetch_bucket') {
+    const idx = input.bucket_index;
+    const r = await fetch(`https://clover-backend.kairikeymaster.workers.dev/ticktick/bucket?index=${idx}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
+    return await r.json();
+  }
+  throw new Error(`Unknown tool: ${name}`);
+}
+
+  
+// ── Main Claude call — handles tool-use loop ────────────────────────────────
+async function callClaude(userMsg) {
+  if (userMsg !== '__INIT__') history.push({ role: 'user', content: userMsg });
+  const system = await buildSystem();
+
+  const MAX_ITERATIONS = 10;
+  for (let i = 0; i < MAX_ITERATIONS; i++) {
+    const msgs = history.length ? history : [{ role: 'user', content: 'Begin.' }];
+    // Retry transient overloads (529) and rate limits (429) with exponential backoff.
+    let d;
+    const MAX_RETRIES = 4;
+    for (let attempt = 0; ; attempt++) {
+      let r;
+      try {
+        r = await fetch('https://clover-backend.kairikeymaster.workers.dev/anthropic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-5',
+            max_tokens: 1500,
+            system,
+            messages: msgs,
+            tools: TOOLS
+          })
+        });
+      } catch (e) {
+        throw new Error(`callClaude fetch failed: ${e.message}`);
+      }
+      d = await r.json();
+      console.log(`callClaude iteration ${i}, attempt ${attempt}:`, d);
+
+      const errType = d.error?.type || (d.type === 'error' ? d.error?.type : null);
+      const isTransient = errType === 'overloaded_error' || errType === 'rate_limit_error';
+
+      if ((d.type === 'error' || d.error) && isTransient && attempt < MAX_RETRIES) {
+        const waitMs = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s, 8s
+        addSys(`Anthropic ${errType} — retrying in ${waitMs / 1000}s (attempt ${attempt + 1}/${MAX_RETRIES})…`);
+        await new Promise(res => setTimeout(res, waitMs));
+        continue;
+      }
+
+      if (d.type === 'error' || d.error) {
+        throw new Error(`Claude API error: ${JSON.stringify(d)}`);
+      }
+      break; // success
+    }
+
+    // Append assistant's full response to history. With tools, the content is
+    // an array of blocks (text and/or tool_use), not a plain string.
+    history.push({ role: 'assistant', content: d.content });
+
+    // If Claude is done, extract text and return.
+    if (d.stop_reason !== 'tool_use') {
+      const text = d.content.filter(c => c.type === 'text').map(c => c.text).join('');
+      if (!text) {
+        throw new Error(`Claude returned no text. Full response: ${JSON.stringify(d)}`);
+      }
+      return text;
+    }
+
+    // Claude wants to use tools. Execute each and build tool_result blocks.
+    const toolUseBlocks = d.content.filter(c => c.type === 'tool_use');
+    const toolResultBlocks = await Promise.all(toolUseBlocks.map(async (block) => {
+      try {
+        const result = await executeTool(block.name, block.input);
+        return {
+          type: 'tool_result',
+          tool_use_id: block.id,
+          content: typeof result === 'string' ? result : JSON.stringify(result)
+        };
+      } catch (e) {
+        return {
+          type: 'tool_result',
+          tool_use_id: block.id,
+          content: `Error executing ${block.name}: ${e.message}`,
+          is_error: true
+        };
+      }
+    }));
+
+    // Tool results go back to Claude as a user message containing the result blocks.
+    history.push({ role: 'user', content: toolResultBlocks });
+    // Loop continues with updated history.
+  }
+
+  throw new Error(`Exceeded ${MAX_ITERATIONS} tool-use iterations without a final reply`);
+}
+  
+  
+
+async function autoLog(userMsg, reply) {
+  // Get the assistant message that came BEFORE the user's feedback message
+  // At this point, history = [..., prev_assistant, feedback_user_msg, current_assistant_reply]
+  const prevAssistant = history.length >= 3 
+    ? history[history.length - 3].content 
+    : '(no previous message)';
+  
+  // Strip internal newlines so the bullet stays on one line
+  const cleanPrev = prevAssistant.replace(/\s+/g, ' ').trim();
+  const cleanMsg = userMsg.replace(/\s+/g, ' ').trim();
+  
+  const entry = `**Re:** "${cleanPrev}" — **Feedback:** ${cleanMsg}`;
+  const ok = await appendFeedback(entry);
+  return ok;
+}
+
+async function send(text) {
+  const msg = text || inputEl.value.trim();
+  if (!msg) return;
+  inputEl.value = ''; inputEl.style.height = 'auto';
+  sendBtn.disabled = true;
+  const fb = msg !== '__INIT__' && isFeedback(msg);
+  if (msg !== '__INIT__') addMsg('user', msg);
+  const typ = addTyping();
+  try {
+    const reply = await callClaude(msg);
+    typ.remove();
+    const nm = detectMode(reply);
+    if (nm) setMode(nm);
+    const task = extractTask(reply);
+    const el = addMsg('assistant', reply, task);
+    
+    if (msg !== '__INIT__') {
+  const ts = new Date().toLocaleString('sv-SE').slice(0, 16);
+  fetch('https://clover-backend.kairikeymaster.workers.dev/append-transcript', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source: 'H', user: msg, assistant: reply, timestamp: ts })
+  });
+}
+
+    if (fb) {
+      const note = document.createElement('span');
+      note.className = 'log-note';
+      note.textContent = 'logging…';
+      el.appendChild(note);
+      autoLog(msg, reply).then(ok => {
+        if (ok) {
+          note.textContent = '✓ logged';
+        } else {
+          note.className = 'log-note fail';
+          note.textContent = '✗ log failed — copy manually:';
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'copy-btn';
+          copyBtn.textContent = 'copy feedback';
+          copyBtn.onclick = () => { navigator.clipboard.writeText(`${msg}\n---\n${reply}`); copyBtn.textContent = 'copied'; };
+          el.appendChild(copyBtn);
+        }
+      });
+    }
+
+    if (msg === '__INIT__') {
+      setTimeout(() => addQBtns(el, ['skip this one', '30 min free', 'low-effort only', "what's due soon?"]), 200);
+    } else if (mode === 'activation' && /hesitat|not sure|overwhelm|don'?t want|ugh|skip|maybe later/i.test(msg)) {
+      setTimeout(() => addQBtns(el, ["let's do it", 'tell me more', 'pick something else']), 200);
+    } else if (mode === 'execution') {
+      setTimeout(() => addQBtns(el, ['next', 'wait, how?', 'done ✓', 'i got stuck']), 200);
+    }
+    if (voiceActive) {
+      await speakReply(reply);
+      if (voiceActive && voiceMode === 'convo') startListening();
+    }
+  } catch(e) {
+    console.log('send error:', e);
+    typ.remove();
+    addMsg('assistant', `send error: ${e}`);
+  }
+  sendBtn.disabled = false;
+  if (msg !== '__INIT__') inputEl.focus();
+}
+
+inputEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+inputEl.addEventListener('input', () => { inputEl.style.height = 'auto'; inputEl.style.height = Math.min(inputEl.scrollHeight, 110) + 'px'; });
+sendBtn.addEventListener('click', () => send());
+
+async function init() {
+  setMode('triage');
+  try {
+    const obsidianOk = await checkObsidian();
+    statusDot.className = obsidianOk ? 'ready' : 'partial';
+    if (obsidianOk && !shouldAutoVoice()) {
+      triageBtn.classList.add('visible');
+      // Auto-open the triage panel on load — triage is the primary use case for this HTML.
+      // Skip fetchTasks and __INIT__: triage doesn't need the task list or execution-mode context,
+      // and firing them wastes the entire per-minute token budget before annotate can run.
+      triageBtn.click();
+      return;
+    }
+    if (!obsidianOk && !shouldAutoVoice()) addSys('Obsidian offline — make sure Obsidian is open with the Local REST API plugin enabled on port 27123, and that the OBSIDIAN.key in this file matches the plugin\'s key');
+  } catch(e) {
+    statusDot.className = 'error';
+    addSys('connection issue — running in limited mode');
+    addMsg('assistant', `error at init function: ${e}`);
+  }
+  await fetchTasks();
+  if (!greetingSent) { greetingSent = true; send('__INIT__'); }
+}
+
+// Triage
+let selectedFile = null;
+
+const triageBtn = document.getElementById('triage-btn');
+const triagePanel = document.getElementById('triage-panel');
+const fileList = document.getElementById('file-list');
+const triageControls = document.getElementById('triage-controls');
+const triageStatus = document.getElementById('triage-status');
+const annotateBtn = document.getElementById('annotate-btn');
+const executeBtn = document.getElementById('execute-btn');
+const backBtn = document.getElementById('back-btn');
+
+triageBtn.addEventListener('click', async () => {
+  chat.style.display = 'none';
+  document.getElementById('input-area').style.display = 'none';
+  triagePanel.classList.add('visible');
+  setMode('triage');
+  fileList.innerHTML = '<div class="triage-status">Loading...</div>';
+  triageControls.style.display = 'none';
+  selectedFile = null;
+  try {
+    // NOTE: The plugin's folder-listing endpoint is GET /vault/<folder>/ — but the exact
+    // shape of the JSON it returns (key names, structure) wasn't verified before this
+    // rewrite. If the file list shows up empty even though CAPTURE has files, check the
+    // browser dev tools Network tab: look at the raw response and adjust the .files
+    // access below to match the actual key name (e.g. might be .items, .entries, etc.)
+    const r = await obsidian('CAPTURE/');
+    const data = await r.json();
+    fileList.innerHTML = '';
+    (data.files || []).filter(f => f.endsWith('.md')).forEach(f => {
+      const btn = document.createElement('button');
+      btn.className = 'file-btn';
+      btn.textContent = f.replace('.md', '');
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.file-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedFile = f;
+        triageControls.style.display = 'block';
+        triageStatus.textContent = `Selected: ${f.replace('.md','')}`;
+        executeBtn.disabled = true;
+        annotateBtn.disabled = true;   // gated behind winnow
+        winnowBtn.disabled = false;
+      });
+      fileList.appendChild(btn);
+    });
+  } catch(e) {
+    fileList.innerHTML = '<div class="triage-status">Failed to load files.</div>';
+    addMsg('assistant', `error at triageBtn.addEventListener: ${e}`);
+  }
+});
+
+backBtn.addEventListener('click', () => {
+  triagePanel.classList.remove('visible');
+  chat.style.display = 'flex';
+  document.getElementById('input-area').style.display = 'flex';
+  setMode('activation');
+});
+
+// ── Validator: rewrite bad callouts before writing the annotated note back ───
+// Runs after annotateNote(), before the note is written back to Obsidian.
+// Three corrections, each leaving a breadcrumb so Anna can spot Clover's bad guesses:
+//   1. `+ Title` where the target note doesn't exist → `* Title` in same folder
+//   2. No marker, valid folder → `* <generated>` in that folder
+//   3. No marker, invalid folder → `* <generated>` in CAPTURE
+async function validateCallouts(annotated) {
+  // Split into sections the same way the executor will: empty-heading delimited.
+  const sections = annotated.split(/^# $/m);
+  const validatedSections = [];
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    const lines = section.split('\n');
+    const calloutIdx = lines.findIndex(l => l.startsWith('> [!info]'));
+    if (calloutIdx === -1) { validatedSections.push(section); continue; }
+    const calloutLine = lines[calloutIdx];
+
+    // Only validating Obsidian callouts; TickTick callouts pass through untouched.
+    if (!calloutLine.includes('Obsidian')) { validatedSections.push(section); continue; }
+
+    // The item text is whatever isn't a callout line; used for title-gen fallback.
+    const itemText = lines.filter(l => !l.startsWith('>')).join('\n').trim();
+
+    // Try parsing with marker first (existing format).
+    const withMarker = calloutLine.match(/Obsidian > (.+?) > ([*+])(.*)$/);
+    if (withMarker) {
+      const folderPath = withMarker[1].replace(/ > /g, '/');
+      const action = withMarker[2];
+      const titleHint = withMarker[3].trim();
+
+      if (action === '+') {
+        // Case 1: verify the target note actually exists at the implied path.
+        // We try the most likely shape: <folderPath>/<titleHint>.md
+        const expectedPath = `${folderPath}/${titleHint}.md`;
+        const check = await obsidian(expectedPath);
+        if (!check.ok) {
+          // Rewrite to `*` in same folder, preserve the intended title.
+          lines[calloutIdx] = `> [!info] Obsidian > ${withMarker[1]} > \\*${titleHint} <!-- auto-corrected: original \`+ ${titleHint}\` had no matching note at ${expectedPath} -->`;
+        }
+        // If it exists, leave the + callout alone — executor will append.
+      }
+      // `*` with marker — no validation needed, executor handles folder.
+      validatedSections.push(lines.join('\n'));
+      continue;
+    }
+
+    // No marker. Try parsing as folder-only.
+    const folderOnly = calloutLine.match(/Obsidian > (.+?)\s*$/);
+    if (!folderOnly) { validatedSections.push(section); continue; }
+    const folderPath = folderOnly[1].replace(/ > /g, '/');
+
+    // Generate a title from the item content (same approach as executor).
+    const titleRes = await fetch('https://clover-backend.kairikeymaster.workers.dev/anthropic', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 30,
+        system: 'Summarize the note into a concise 3-5 word title suitable for a filename. Return ONLY the title text — no quotes, punctuation, explanation, or file extension.',
+        messages: [{ role: 'user', content: itemText }]
+      })
+    });
+    const titleData = await titleRes.json();
+    const genTitle = titleData.content?.[0]?.text?.trim().replace(/[\\/:*?"<>|]/g, '') || 'Untitled Note';
+
+    // Check if the named folder actually exists.
+    const folderCheck = await obsidian(`${folderPath}/`);
+    if (folderCheck.ok) {
+      // Case 2: valid folder, no marker → * <gen> in that folder
+      lines[calloutIdx] = `> [!info] Obsidian > ${folderOnly[1]} > \\*${genTitle} <!-- auto-corrected: no marker, generated title -->`;
+    } else {
+      // Case 3: invalid folder → * <gen> in CAPTURE
+      lines[calloutIdx] = `> [!info] Obsidian > CAPTURE > \\*${genTitle} <!-- auto-corrected: original folder "${folderPath}" not found -->`;
+    }
+    validatedSections.push(lines.join('\n'));
+  }
+
+  // Reassemble with the original "# " separators.
+  return validatedSections.join('# ');
+}
+
+annotateBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  annotateBtn.disabled = true;
+  triageStatus.textContent = 'Reading note...';
+  try {
+    const r = await obsidian(`CAPTURE/${selectedFile}`);
+    const noteContent = await r.text();
+    triageStatus.textContent = 'Annotating...';
+    const annotated = await annotateNote(noteContent);
+    triageStatus.textContent = 'Validating callouts...';
+    const validated = await validateCallouts(annotated);
+    lastProposedNote[selectedFile] = validated;
+    const w = await obsidian(`CAPTURE/${selectedFile}`, { method: 'PUT', body: validated });
+    if (w.ok) {
+      triageStatus.textContent = 'Annotated — review in Obsidian, then click "Done reviewing."';
+      executeBtn.disabled = false;
+    } else {
+      triageStatus.textContent = 'Failed to write back to Obsidian.';
+      annotateBtn.disabled = false;
+    }
+  } catch(e) {
+    triageStatus.textContent = 'Error: ' + e.message;
+    annotateBtn.disabled = false;
+    addMsg('assistant', `error at annotateBtn.addEventListener: ${e}`);
+  }
+});
+
+executeBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  executeBtn.disabled = true;
+  triageStatus.textContent = 'Reading reviewed note...';
+  try {
+    // 1. Read the (now reviewed, validated) annotated note from local Obsidian.
+    const r = await obsidian(`CAPTURE/${selectedFile}`);
+    const noteContent = await r.text();
+    const noteTitle = selectedFile.replace('.md','');
+
+    // 1a. LOG corrections: diff Clover's post-validator proposal against Anna's reviewed version.
+    //     One JSONL record per item per run. Records go to two separate gists by outcome.
+    //     Wrapped in try/catch so logging failures never block triage execution.
+    try {
+      const proposedRaw = lastProposedNote[selectedFile];
+      if (proposedRaw) {
+        const splitItems = (text) => text.split(/^# $/m).map(s => s.trim()).filter(Boolean);
+        const proposedItems = splitItems(proposedRaw);
+        const finalItems = splitItems(noteContent);
+        // Items are matched by position (sections in the same order in both versions).
+        const len = Math.min(proposedItems.length, finalItems.length);
+        const timestamp = new Date().toISOString();
+
+        for (let i = 0; i < len; i++) {
+          const pLines = proposedItems[i].split('\n');
+          const fLines = finalItems[i].split('\n');
+          const pCallout = pLines.find(l => l.startsWith('> [!info]')) || null;
+          const fCallout = fLines.find(l => l.startsWith('> [!info]')) || null;
+          // Item text = everything that isn't a callout/blockquote line, from the final version.
+          const itemText = fLines.filter(l => !l.startsWith('>')).join('\n').trim();
+
+          const proposed = parseCallout(pCallout);
+          const final    = parseCallout(fCallout);
+
+          // Classify the outcome.
+          let outcome;
+          if (proposed.type === 'none' && final.type === 'none')       continue;                       // neither side flagged — no signal
+          else if (proposed.type === 'none')                            outcome = 'added-by-anna';     // Anna added a flag Clover missed
+          else if (final.type === 'none')                               outcome = 'rejected';          // Anna deleted Clover's flag entirely
+          else if (calloutsMatch(proposed, final))                      outcome = 'kept';              // Anna accepted Clover's proposal
+          else                                                          outcome = 'corrected';         // Anna changed something
+
+          const record = { timestamp, daily_note: noteTitle, item_text: itemText, proposed, final, outcome };
+
+          // Rejections go to a separate gist; everything else to the corrections gist.
+          if (outcome === 'rejected') await appendRejection(record);
+          else                        await appendCorrection(record);
+        }
+      }
+    } catch(logErr) {
+      console.error('Logging failed (continuing with triage):', logErr);
+      addMsg('assistant', `Correction logging failed: ${logErr.message}`);
+    }
+
+    triageStatus.textContent = 'Looking up living documents...';
+
+    // 2. Search for living-document-tagged notes for fuzzy-match on `+`. Direct fetch since /search/ is not under /vault/.
+    const livingRes = await fetch(`${OBSIDIAN.base}/search/`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${OBSIDIAN.key}`, 'Content-Type': 'application/vnd.olrapi.jsonlogic+json' },
+      body: JSON.stringify({ "in": ["living-document", { "var": "tags" }] })
+    });
+    const livingDocs = livingRes.ok ? await livingRes.json() : [];
+    const livingTitles = (Array.isArray(livingDocs) ? livingDocs : []).map(d => ({
+      path: d.filename,
+      title: d.filename.split('/').pop().replace('.md','')
+    }));
+
+    triageStatus.textContent = 'Executing flagged items...';
+
+    // 3. Parse sections WITH their index, so we can later map results back to the source item for annotation.
+    // Note: split() on "^# $" gives N+1 pieces; first piece is pre-first-delimiter content (usually empty).
+    const rawSections = noteContent.split(/^# $/m);
+    const results = [];
+    // Tracks paths we've PUT to in this run, so a second item routed to the same new-note
+    // path appends (POST) instead of overwriting (PUT). Without this, item A is silently
+    // replaced when item B targets the same * Title in the same folder.
+    const createdPaths = new Set();
+
+    for (let sectionIdx = 0; sectionIdx < rawSections.length; sectionIdx++) {
+      const section = rawSections[sectionIdx].trim();
+      if (!section) continue;
+      const lines = section.split('\n');
+      const calloutLine = lines.find(l => l.startsWith('> [!info]'));
+      if (!calloutLine) continue;  // unflagged — stays in daily note, will go to CAPTURE during archive
+      const itemText = lines.filter(l => !l.startsWith('>')).join('\n').trim();
+      const dateStamp = `<span class="date-stamp">${noteTitle}</span>`;
+
+      if (calloutLine.includes('TickTick')) {
+                // New schema: project (~TK/BK/FM/GH/FT), priority (!pN), zero-or-more tags (#HE/#LCL/#HCL/#d0/#d1).
+        const projectMatch  = calloutLine.match(/\\?~(TK|BK|FM|GH|FT)\b/);
+        const priorityMatch = calloutLine.match(/\\?!(p0|p1|p3|p5)\b/);
+        const tagMatches    = [...calloutLine.matchAll(/\\?#(HE|LCL|HCL|d0|d1)\b/g)];
+        const project  = projectMatch  ? projectMatch[1]  : 'TK';
+        const priority = priorityMatch ? priorityMatch[1] : 'p0';
+        const tags     = tagMatches.map(m => m[1]);
+
+        const titleLine = itemText.split('\n')[0];
+        const restLines = itemText.split('\n').slice(1).join('\n');
+        const taskRes = await fetch('https://clover-backend.kairikeymaster.workers.dev/ticktick/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: titleLine, content: restLines, project, priority, tags })
+        });
+        results.push({ type: 'ticktick', title: titleLine, ok: taskRes.ok, sectionIdx });
+
+      } else if (calloutLine.includes('Obsidian')) {
+        const pathMatch = calloutLine.match(/Obsidian > (.+?) > \\?([*+])(.*?)(?:\s*<!--.*?-->)?$/);
+        if (!pathMatch) { results.push({ type: 'parse-error', sectionIdx, ok: false }); continue; }
+        const folderPath = pathMatch[1].replace(/ > /g, '/');
+        const action = pathMatch[2];
+        const titleHint = pathMatch[3].trim();
+
+        if (action === '*') {
+          let title = titleHint;
+          if (!title) {
+            const titleRes = await fetch('https://clover-backend.kairikeymaster.workers.dev/anthropic', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'claude-sonnet-4-5', max_tokens: 30,
+                system: 'Summarize the note into a concise 3-5 word title suitable for a filename. Return ONLY the title text — no quotes, punctuation, explanation, or file extension.',
+                messages: [{ role: 'user', content: itemText }]
+              })
+            });
+            const titleData = await titleRes.json();
+            title = titleData.content?.[0]?.text?.trim().replace(/[\\/:*?"<>|]/g, '') || 'Untitled Note';
+          }
+          const notePath = `${folderPath}/${title}.md`;
+          let noteRes;
+          if (createdPaths.has(notePath)) {
+            // Already created this exact path earlier in this run — append instead of overwriting.
+            noteRes = await obsidian(notePath, { method: 'POST', body: `\n${itemText} ${dateStamp}` });
+            results.push({ type: 'obsidian-append', title, path: notePath, ok: noteRes.ok, sectionIdx, wasMerged: true });
+          } else {
+            noteRes = await obsidian(notePath, { method: 'PUT', body: `${itemText} ${dateStamp}` });
+            createdPaths.add(notePath);
+            results.push({ type: 'obsidian-new', title, path: notePath, ok: noteRes.ok, sectionIdx });
+          }
+
+        } else if (action === '+') {
+          const searchTitle = titleHint.toLowerCase();
+          let match = livingTitles.find(d => d.title.toLowerCase() === searchTitle);
+          if (!match) match = livingTitles.find(d =>
+            d.title.toLowerCase().includes(searchTitle) || searchTitle.includes(d.title.toLowerCase())
+          );
+
+
+          // If no living-document match, search the whole vault by filename before giving up.
+          if (!match) {
+            try {
+              const vaultSearchRes = await fetch(`${OBSIDIAN.base}/search/simple/?query=${encodeURIComponent(titleHint)}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${OBSIDIAN.key}` }
+              });
+              if (vaultSearchRes.ok) {
+                const vaultResults = await vaultSearchRes.json();
+                const vaultMatch = (Array.isArray(vaultResults) ? vaultResults : []).find(d => {
+                  const title = d.filename.split('/').pop().replace('.md','').toLowerCase();
+                  return title === searchTitle || title.includes(searchTitle) || searchTitle.includes(title);
+                });
+                if (vaultMatch) match = { path: vaultMatch.filename, title: vaultMatch.filename.split('/').pop().replace('.md','') };
+              }
+            } catch(searchErr) {
+              addMsg('assistant', `Vault search failed for "${titleHint}": ${searchErr.message}`);
+            }
+          }
+
+          if (match) {
+            const appendRes = await obsidian(match.path, { method: 'POST', body: `\n${itemText} ${dateStamp}\n#living-document` });
+            results.push({ type: 'obsidian-append', title: match.title, path: match.path, ok: appendRes.ok, sectionIdx });
+          } else {
+            // Genuinely not found — create new note in the named folder, tag it for future matches.
+            const fallbackTitle = titleHint || 'Unmatched Note';
+            const fallbackPath = `${folderPath}/${fallbackTitle}.md`;
+            let fallbackRes;
+            if (createdPaths.has(fallbackPath)) {
+              fallbackRes = await obsidian(fallbackPath, { method: 'POST', body: `\n${itemText} ${dateStamp}\n#living-document` });
+              results.push({ type: 'obsidian-append', title: fallbackTitle, path: fallbackPath, ok: fallbackRes.ok, sectionIdx, wasMerged: true, wasFallback: true });
+            } else {
+              fallbackRes = await obsidian(fallbackPath, { method: 'PUT', body: `${itemText} ${dateStamp}\n#living-document` });
+              createdPaths.add(fallbackPath);
+              results.push({ type: 'obsidian-new', title: fallbackTitle, path: fallbackPath, ok: fallbackRes.ok, sectionIdx, wasFallback: true });
+            }
+          }
+        }
+      } else if (calloutLine.includes('archive')) {
+        results.push({ type: 'archive', ok: true, sectionIdx });
+      }
+    }
+
+    // 4. VERIFIER: confirm each Obsidian result actually landed on disk.
+    // TickTick we trust the create call's ok flag (TickTick has eventual-consistency lag on reads).
+    triageStatus.textContent = 'Verifying writes...';
+    for (const res of results) {
+      if (res.type === 'obsidian-new' || res.type === 'obsidian-append') {
+        const verifyRes = await obsidian(res.path);
+        if (!verifyRes.ok) res.ok = false;  // overwrite — verification failed
+      }
+    }
+
+    const anyFailed = results.some(r => !r.ok);
+
+    // 5. ANNOTATE the daily note in place: backlinks for successes, warnings for failures.
+    // Walk the sections again, rewrite each one based on its result.
+    const updatedSections = [...rawSections];
+    for (const res of results) {
+      const sec = updatedSections[res.sectionIdx];
+      if (!sec) continue;
+      let annotation = '';
+      if (!res.ok) {
+        annotation = `\n\n> [!failure] Item failed to generate!`;
+      } else if (res.type === 'obsidian-new') {
+        annotation = `\n→ [[${res.title}]]`;
+      } else if (res.type === 'obsidian-append') {
+        annotation = `\n→ [[${res.title}]]`;
+      } else if (res.type === 'ticktick') {
+        annotation = `\n→ TickTick: ${res.title}`;
+      }
+      // Append annotation at end of section (preserve existing content including the callout).
+      updatedSections[res.sectionIdx] = sec.replace(/\s*$/, '') + annotation + '\n';
+    }
+    const updatedNote = updatedSections.join('# ');
+
+    if (anyFailed) {
+      // Write the annotated-with-warnings note back to CAPTURE; do NOT archive.
+      await obsidian(`CAPTURE/${noteTitle}.md`, { method: 'PUT', body: updatedNote });
+      triageStatus.innerHTML = `<strong>Partial failure — daily note NOT archived.</strong><br><pre style="font-size:10px;margin-top:6px;white-space:pre-wrap">Review CAPTURE/${noteTitle}.md in Obsidian; failed items are tagged with > [!warning].</pre>`;
+    } else {
+      // All good: write the backlinked version to _archive, delete the CAPTURE original.
+      const archivePath = `_archive/${noteTitle}.md`;
+      await obsidian(archivePath, { method: 'PUT', body: updatedNote });
+      await obsidian(`CAPTURE/${noteTitle}.md`, { method: 'DELETE' });
+      const summary = results.map(r => {
+        if (r.type === 'ticktick') return `✓ TickTick: ${r.title}`;
+        if (r.type === 'obsidian-new') return r.wasFallback ? `✓ New note (+ fallback): ${r.title}` : `✓ New note: ${r.title}`;
+        if (r.type === 'obsidian-append') return `✓ Appended to: ${r.title}`;
+        if (r.type === 'archive') return `✓ Archived`;
+        return `? ${r.type}`;
+      }).join('\n');
+      triageStatus.innerHTML = `<strong>Done!</strong><br><pre style="font-size:10px;margin-top:6px;white-space:pre-wrap">${summary}</pre>`;
+    }
+
+  } catch(e) {
+    triageStatus.textContent = 'Error: ' + e.message;
+    executeBtn.disabled = false;
+    addMsg('assistant', `executeBtn.addEventListener error: ${e}\n${e.stack || ''}`);
+  }
+});
+
+async function annotateNote(content) {
+  // Pre-flight size guard: abort before hitting the API if the note is suspiciously large.
+  // Normal daily notes are well under 5k characters; 30k is a safe ceiling that leaves
+  // headroom before the ~30k token/min rate limit would be approached.
+  const MAX_NOTE_CHARS = 30000;
+  if (content.length > MAX_NOTE_CHARS) {
+    const estTokens = Math.round(content.length / 4);
+    const msg = `Note too large to annotate: ${content.length.toLocaleString()} characters (~${estTokens.toLocaleString()} tokens), exceeding the ${MAX_NOTE_CHARS.toLocaleString()}-character safety limit. This usually means pasted code, accumulated content, or leftover callouts from a previous partial run. Open the file in Obsidian, remove the bloat, and retry.`;
+    addMsg('assistant', msg);
+    triageStatus.textContent = 'Aborted: note too large';
+    throw new Error(msg);
+  }
+
+  const [pkm, triageInstructions] = await Promise.all([
+    fetch(`https://clover-backend.kairikeymaster.workers.dev/gist?id=${GISTS.context}`).then(r => r.text()),
+    fetch(`https://clover-backend.kairikeymaster.workers.dev/gist?id=${GISTS.triage}`).then(r => r.text())
+  ]);
+  
+  const r = await fetch('https://clover-backend.kairikeymaster.workers.dev/anthropic', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 4000,
+      system: `You are a triage assistant. Annotate daily notes by adding > [!info] callouts proposing destinations for each item.\n\n${pkm}\n\n${triageInstructions}\n\nReturn ONLY the complete note with callouts inserted. No explanation, no commentary, no questions — only the raw note content with callouts added. Preserve all backslashes exactly as shown in examples (write \\#task not #task, \\*New Note not *New Note).`,
+      messages: [
+        { role: 'user', content: `Annotate this daily note:\n\n${content}` }
+      ]
+    })
+  });
+  
+  const d = await r.json();
+  console.log('API response:', d);
+  
+   if (d.type === 'error') {
+    console.log('Error details:', d.error);
+    triageStatus.textContent = 'API error: ' + (d.error?.message || JSON.stringify(d.error));
+    return content;
+  }
+
+const rawResult = d.content?.[0]?.text || content;
+  // Belt-and-suspenders: the model sometimes wraps its whole response in ```markdown ... ```
+  // or just ``` ... ```, ignoring the system prompt's instruction not to. Strip a single
+  // outer fence if present. Only strips a fence that wraps the ENTIRE response; inner code
+  // blocks (e.g., examples a user might write inside an item) are left alone.
+  const fenceMatch = rawResult.match(/^\s*```[a-zA-Z]*\n([\s\S]*?)\n```\s*$/);
+  const result = fenceMatch ? fenceMatch[1] : rawResult;
+    console.log('Returning:', result.slice(0, 200));
+  return result;
+}
+
+
+
+// ── Voice mode ──────────────────────────────────────────────────────────────
+
+const voiceToggle  = document.getElementById('voice-toggle');
+const voiceBar     = document.getElementById('voice-bar');
+const micBtn       = document.getElementById('mic-btn');
+const voiceStatus  = document.getElementById('voice-status');
+const vmodeBtns    = document.querySelectorAll('.vmode-btn');
+const inputArea    = document.getElementById('input-area');
+
+let voiceActive    = false;
+let greetingSent   = false;
+let walkieBuffer   = '';
+let voiceMode      = 'walkie';   // 'walkie' | 'convo'
+let isListening    = false;
+let isSpeaking     = false;
+let recognition    = null;
+let convoSilTimer  = null;
+let currentAudio   = null;
+const SILENCE_MS   = 2500;       // convo mode: pause before sending
+
+// Auto-switch to voice if narrow screen (phone)
+function shouldAutoVoice() {
+  return window.innerWidth <= 900 || ('ontouchstart' in window && window.innerWidth <= 1500);
+}
+
+function setVoiceActive(on) {
+  voiceActive = on;
+  voiceToggle.classList.toggle('active', on);
+  voiceBar.classList.toggle('visible', on);
+  inputArea.classList.toggle('hidden', on);
+  updateNextBtn();
+  if (!on) { stopListening(); return; }
+  // Turning voice ON with no conversation yet → fire the greeting (spoken via send()).
+  if (!greetingSent && history.length === 0) {
+    greetingSent = true;
+    send('__INIT__');
+  }
+}
+
+// Mode buttons
+vmodeBtns.forEach(b => {
+  b.addEventListener('click', () => {
+    vmodeBtns.forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    voiceMode = b.id === 'vmode-walkie' ? 'walkie' : 'convo';
+    updateMicHint();
+    if (isListening) stopListening();
+  });
+});
+
+voiceToggle.addEventListener('click', () => setVoiceActive(!voiceActive));
+
+function updateMicHint() {
+  if (isSpeaking)    { voiceStatus.textContent = 'speaking…'; return; }
+  if (isListening)   { voiceStatus.textContent = 'listening…'; return; }
+  voiceStatus.textContent = voiceMode === 'walkie' ? 'hold to talk' : 'tap to start';
+}
+
+// ── STT via Web Speech API ───────────────────────────────────────────────────
+function buildRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { voiceStatus.textContent = 'STT not supported'; return null; }
+  const r = new SpeechRecognition();
+  r.continuous     = true;    // keep listening across pauses, both modes
+  r.interimResults = false;
+  r.lang           = 'en-US';
+
+  r.onresult = (e) => {
+    // Append only the newest finalized results to the buffer.
+    let newText = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) newText += e.results[i][0].transcript + ' ';
+    }
+    newText = newText.trim();
+    if (!newText) return;
+    walkieBuffer = (walkieBuffer + ' ' + newText).trim();
+
+    if (voiceMode === 'convo') {
+      // convo mode: send after SILENCE_MS of quiet
+      clearTimeout(convoSilTimer);
+      convoSilTimer = setTimeout(() => {
+        const t = walkieBuffer; walkieBuffer = '';
+        stopListening();
+        handleVoiceInput(t);
+      }, SILENCE_MS);
+    }
+    // walkie mode: do nothing here — we send on button release
+  };
+
+  r.onerror = (e) => {
+    if (e.error === 'no-speech') { updateMicHint(); return; }
+    voiceStatus.textContent = 'mic error: ' + e.error;
+    stopListening();
+  };
+
+  r.onend = () => {
+    // If the user is still holding, restart — the API auto-ends after long pauses
+    // even in continuous mode, and we don't want to drop the rest of their sentence.
+    if (isListening) {
+      try { r.start(); } catch(_) {}
+    } else {
+      micBtn.classList.remove('listening');
+      updateMicHint();
+    }
+  };
+
+  return r;
+}
+
+function stopEverything() {
+  // Stop TTS playback
+  if (currentAudio && !currentAudio.paused) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  // Stop listening
+  clearTimeout(convoSilTimer);
+  isListening = false;
+  micBtn.classList.remove('listening');
+  if (recognition) { try { recognition.stop(); } catch(_) {} recognition = null; }
+  isSpeaking = false;
+  micBtn.disabled = false;
+  micBtn.classList.remove('speaking');
+  updateMicHint();
+}
+
+function startListening() {
+  stopEverything();
+  walkieBuffer = '';
+  recognition = buildRecognition();
+  if (!recognition) return;
+  try {
+    recognition.start();
+    isListening = true;
+    micBtn.classList.add('listening');
+    updateMicHint();
+  } catch(e) {
+    addMsg('assistant', `could not start mic: ${e}`);
+  }
+}
+
+function stopListening() {
+  clearTimeout(convoSilTimer);
+  isListening = false;
+  micBtn.classList.remove('listening');
+  if (recognition) { try { recognition.stop(); } catch(_) {} recognition = null; }
+  updateMicHint();
+}
+
+// ── Walkie-talkie: hold pointer or spacebar ─────────────────────────────────
+
+function finishWalkie() {
+  const t = walkieBuffer.trim();
+  walkieBuffer = '';
+  stopListening();
+  if (t) handleVoiceInput(t);
+}
+function cancelWalkie() {
+  walkieBuffer = '';
+  stopListening();
+  updateMicHint();
+}
+
+micBtn.addEventListener('pointerup', () => {
+  if (voiceMode !== 'walkie') return;
+  if (isListening) finishWalkie();
+});
+
+micBtn.addEventListener('pointercancel', () => {
+  if (voiceMode !== 'walkie') return;
+  if (isListening) cancelWalkie();
+});
+
+micBtn.addEventListener('pointerleave', (e) => {
+  if (voiceMode !== 'walkie') return;
+  if (e.buttons > 0 && isListening) cancelWalkie();
+});
+
+// Drag finger/mouse off the button while held → stop (avoids stuck-listening)
+micBtn.addEventListener('pointerleave', (e) => {
+  if (voiceMode !== 'walkie') return;
+  if (e.buttons > 0 && isListening) stopListening();
+});
+
+// Spacebar push-to-talk (desktop)
+let spacePTTActive = false;
+document.addEventListener('keydown', (e) => {
+  if (e.code !== 'Space') return;
+  if (!voiceActive || voiceMode !== 'walkie') return;
+  const tag = (e.target?.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
+  if (e.repeat) return;
+  e.preventDefault();
+  // Blur any focused button so spacebar doesn't also activate it
+  if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
+  if (!isListening) {
+    spacePTTActive = true;
+    startListening();
+  }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.code !== 'Space') return;
+  if (!spacePTTActive) return;
+  spacePTTActive = false;
+  if (isListening) finishWalkie();
+});
+
+// ── Conversation mode: tap to start/stop ────────────────────────────────────
+micBtn.addEventListener('click', () => {
+  if (voiceMode !== 'convo') return;
+  if (isListening) stopListening();
+  else startListening();
+});
+
+// ── Send transcript → Claude → TTS ──────────────────────────────────────────
+async function handleVoiceInput(transcript) {
+  addMsg('user', transcript);
+  micBtn.disabled = true;
+  micBtn.classList.add('speaking');
+  isSpeaking = true;
+  updateMicHint();
+
+  const typ = addTyping();
+  try {
+    const reply = await callClaude(transcript);
+    typ.remove();
+    const nm = detectMode(reply);
+    if (nm) setMode(nm);
+    const task = extractTask(reply);
+    addMsg('assistant', reply, task);
+
+    // Log transcript
+    const ts = new Date().toLocaleString('sv-SE').slice(0, 16);
+    fetch('https://clover-backend.kairikeymaster.workers.dev/append-transcript', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: 'V', user: transcript, assistant: reply, timestamp: ts })
+    });
+
+    await speakReply(reply);
+  } catch(e) {
+    typ.remove();
+    addMsg('assistant', `error at handleVoiceInput function: ${e}`);
+  }
+
+  isSpeaking = false;
+  micBtn.disabled = false;
+  micBtn.classList.remove('speaking');
+
+  // In convo mode, auto-restart mic after speaking
+  if (voiceActive && voiceMode === 'convo') startListening();
+  else updateMicHint();
+}
+
+// ── OpenAI TTS ───────────────────────────────────────────────────────────────
+let currentAbortController = null;
+
+async function speakReply(text) {
+  voiceStatus.textContent = 'speaking…';
+  const clean = text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/#+\s/g, '')
+    .trim();
+
+  if (currentAbortController) currentAbortController.abort();
+  currentAbortController = new AbortController();
+  const signal = currentAbortController.signal;
+
+  try {
+    const r = await fetch('https://clover-backend.kairikeymaster.workers.dev/openai-tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: clean, voice: 'echo' }),
+      signal
+    });
+    if (!r.ok) {
+      const errText = await r.text();
+      throw new Error(`TTS HTTP ${r.status}: ${errText}`);
+    }
+    await streamPlayAudio(r, signal);
+  } catch(e) {
+    if (e.name === 'AbortError') { console.log('TTS aborted'); return; }
+    voiceStatus.textContent = 'TTS error — see chat';
+    console.error('TTS error:', e);
+    addMsg('assistant', `❌ TTS error: ${e.message}\n${e.stack || ''}`);
+  }
+  updateMicHint();
+}
+
+function streamPlayAudio(response, signal) {
+  return new Promise((resolve, reject) => {
+    if (currentAudio) { try { currentAudio.pause(); } catch {} currentAudio = null; }
+
+    const mimeType = 'audio/mpeg';
+    if (!('MediaSource' in window) || !MediaSource.isTypeSupported(mimeType)) {
+      reject(new Error(`Browser doesn't support MSE for ${mimeType}`));
+      return;
+    }
+
+    const mediaSource = new MediaSource();
+    const audio = new Audio();
+    const objectUrl = URL.createObjectURL(mediaSource);
+    audio.src = objectUrl;
+    currentAudio = audio;
+
+    let cleaned = false;
+    const cleanup = () => { if (!cleaned) { cleaned = true; URL.revokeObjectURL(objectUrl); } };
+
+    audio.addEventListener('ended', () => { cleanup(); resolve(); });
+    audio.addEventListener('error', () => {
+      const err = audio.error;
+      cleanup();
+      reject(new Error(`Audio error code=${err?.code} msg=${err?.message || 'unknown'}`));
+    });
+    signal.addEventListener('abort', () => {
+      try { audio.pause(); } catch {}
+      cleanup();
+      resolve();
+    });
+
+    mediaSource.addEventListener('sourceopen', async () => {
+      let sourceBuffer;
+      try {
+        sourceBuffer = mediaSource.addSourceBuffer(mimeType);
+      } catch (err) {
+        reject(new Error(`addSourceBuffer failed: ${err.message}`));
+        return;
+      }
+
+      const queue = [];
+      let streamDone = false;
+      let playStarted = false;
+
+      const processQueue = () => {
+        if (sourceBuffer.updating) return;
+        if (queue.length === 0) {
+          if (streamDone && mediaSource.readyState === 'open') {
+            try { mediaSource.endOfStream(); } catch {}
+          }
+          return;
+        }
+        try { sourceBuffer.appendBuffer(queue.shift()); }
+        catch (err) { reject(new Error(`appendBuffer failed: ${err.message}`)); }
+      };
+      sourceBuffer.addEventListener('updateend', processQueue);
+
+      try {
+        const reader = response.body.getReader();
+        while (true) {
+          if (signal.aborted) { try { reader.cancel(); } catch {} return; }
+          const { value, done } = await reader.read();
+          if (done) { streamDone = true; processQueue(); break; }
+          queue.push(value);
+          processQueue();
+          if (!playStarted) {
+            playStarted = true;
+            audio.play().catch(err => {
+              if (err.name !== 'AbortError') reject(new Error(`audio.play(): ${err.message}`));
+            });
+          }
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') reject(err);
+      }
+    });
+  });
+}
+
+// Auto-switch on load
+window.addEventListener('load', () => {
+  if (shouldAutoVoice()) setVoiceActive(true);
+});
+
+// Also handle Tasker/widget URL params
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('voice') === '1') setVoiceActive(true);
+if (urlParams.get('mode') === 'convo') {
+  voiceMode = 'convo';
+  vmodeBtns.forEach(b => b.classList.toggle('selected', b.id === 'vmode-convo'));
+}
+
+// ── End voice mode ───────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WINNOW
+// Pre-annotate culling step. Walks through each item in the selected CAPTURE
+// note, asks for a 1–10 payoff estimate and an XXS–XXL effort estimate,
+// computes net = payoff − effortCode (effortCode: XXS=1 … XXL=7), and routes:
+//   net >= 1                      → KEEP (item left untouched)
+//   net <= -2 AND payoff < 5      → ABANDON (item stays in note with date-stamp tag)
+//   else                           → user picks SALVAGE or ABANDON
+// Salvaged items are removed from source and appended to SOMEDAY/Dream Chores/Salvage.md.
+// Abandoned items remain in the source note so they're preserved in the eventual archive.
+// ─────────────────────────────────────────────────────────────────────────────
+const EFFORT_LABELS = ['XXS','XS','S','M','L','XL','XXL'];
+const EFFORT_DEFAULT_CODE = 4; // M
+const WINNOW_TIMER_TOTAL_MS = 40000;
+const WINNOW_TIMER_VISIBLE_MS = 10000;
+const SALVAGE_NOTE_PATH = 'SOMEDAY/Dream Chores/Salvage.md';
+
+const winnowBtn = document.getElementById('winnow-btn');
+let winnowState = null;
+
+winnowBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  winnowBtn.disabled = true;
+  triageStatus.textContent = 'Reading note for winnow...';
+  try {
+    const r = await obsidian(`CAPTURE/${selectedFile}`);
+    if (!r.ok) throw new Error(`Read failed: HTTP ${r.status}`);
+    const noteContent = await r.text();
+    // Same delimiter convention as the executor: `^# $` (a line containing exactly "# ").
+    const sections = noteContent.split(/^# $/m);
+    const preamble = sections[0];
+    // Drop entirely empty trailing sections (e.g. trailing `# `).
+    const itemSections = sections.slice(1).filter(s => s.trim().length > 0);
+    if (itemSections.length === 0) {
+      triageStatus.textContent = 'No items to winnow.';
+      annotateBtn.disabled = false;
+      winnowBtn.disabled = false;
+      addMsg('assistant', `Winnow: no items found in ${selectedFile} (split on /^# $/m returned no non-empty sections).`);
+      return;
+    }
+    winnowState = {
+      preamble,
+      items: itemSections,
+      decisions: new Array(itemSections.length).fill(null),
+      scores: new Array(itemSections.length).fill(null),
+      index: 0,
+    };
+    // Switch to chat view to host per-item UI; user clicks Triage again later to return.
+    triagePanel.classList.remove('visible');
+    chat.style.display = 'flex';
+    document.getElementById('input-area').style.display = 'none';
+    addSys(`Winnowing ${itemSections.length} item${itemSections.length === 1 ? '' : 's'} from ${selectedFile.replace('.md','')}`);
+    showWinnowBeginButton();
+  } catch(e) {
+    triageStatus.textContent = 'Winnow start failed — see chat.';
+    winnowBtn.disabled = false;
+    addMsg('assistant', `error at winnowBtn.click: ${e.message}\n${e.stack || ''}`);
+  }
+});
+
+function showWinnowBeginButton() {
+  // Shown before the very first item, and after any timeout-reset on the current item.
+  const wrap = document.createElement('div');
+  wrap.className = 'msg assistant';
+  const btn = document.createElement('button');
+  btn.className = 'winnow-action-btn primary';
+  btn.textContent = winnowState.index === 0
+    ? `Begin (item 1 of ${winnowState.items.length}) →`
+    : `Begin again (item ${winnowState.index + 1} of ${winnowState.items.length}) →`;
+  btn.addEventListener('click', () => {
+    wrap.remove();
+    renderWinnowItem();
+  });
+  wrap.appendChild(btn);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+  setTimeout(() => btn.focus(), 0);
+}
+
+function renderWinnowItem() {
+  if (winnowState.index >= winnowState.items.length) return finishWinnow();
+  const itemRaw = winnowState.items[winnowState.index];
+  const itemText = itemRaw.trim();
+
+  const block = document.createElement('div');
+  block.className = 'winnow-block';
+  block.tabIndex = -1;
+
+  const counter = document.createElement('div');
+  counter.className = 'winnow-item-counter';
+  counter.textContent = `Item ${winnowState.index + 1} of ${winnowState.items.length}`;
+  block.appendChild(counter);
+
+
+//GEEDLET-EDITED SECTION
+  const payoffWrap = document.createElement('div');
+  const payoffLabel = document.createElement('div');
+  payoffLabel.className = 'winnow-section-label';
+  payoffLabel.textContent = "PAYOFF: a year from now, how much would you regret not doing this?";
+  payoffWrap.appendChild(payoffLabel);
+
+  const slider = document.createElement('div');
+  slider.className = 'winnow-slider untouched';
+  slider.tabIndex = 0;
+  const fill = document.createElement('div');
+  fill.className = 'winnow-slider-fill';
+  slider.appendChild(fill);
+  payoffWrap.appendChild(slider);
+  block.appendChild(payoffWrap);
+//END  
+  
+  const textDiv = document.createElement('div');
+  textDiv.className = 'winnow-item-text';
+  textDiv.textContent = itemText || '(empty item)';
+  block.appendChild(textDiv);
+
+  const effortWrap = document.createElement('div');
+  const effortLabel = document.createElement('div');
+  effortLabel.className = 'winnow-section-label';
+  effortLabel.textContent = 'EFFORT';
+  effortWrap.appendChild(effortLabel);
+
+  const effortRow = document.createElement('div');
+  effortRow.className = 'winnow-effort';
+  const effortBtns = EFFORT_LABELS.map((lbl, i) => {
+    const b = document.createElement('button');
+    b.className = 'effort-btn';
+    b.textContent = lbl;
+    b.tabIndex = 0;
+    if (i + 1 === EFFORT_DEFAULT_CODE) b.classList.add('selected');
+    effortRow.appendChild(b);
+    return b;
+  });
+  effortWrap.appendChild(effortRow);
+  block.appendChild(effortWrap);
+
+  const timerEl = document.createElement('div');
+  timerEl.className = 'winnow-timer';
+  block.appendChild(timerEl);
+
+  const actionsRow = document.createElement('div');
+  actionsRow.className = 'winnow-actions';
+  block.appendChild(actionsRow);
+
+  chat.appendChild(block);
+  chat.scrollTop = chat.scrollHeight;
+
+  // Per-item state.
+  const state = {
+    payoff: 0,
+    payoffTouched: false,
+    effortCode: EFFORT_DEFAULT_CODE,
+    effortTouched: false,
+    phase: 'payoff',         // 'payoff' | 'effort' | 'resolved'
+    submitted: false,
+    timerStarted: false,
+    timerStart: 0,
+    timerId: null,
+  };
+
+  // tick + submit are declared later; arrow functions resolve names at call time, so this is fine.
+  const startTimerIfNeeded = () => {
+    if (state.timerStarted || state.submitted) return;
+    state.timerStarted = true;
+    state.timerStart = Date.now();
+    state.timerId = setInterval(tick, 100);
+  };
+
+  const maybeAutoSubmit = () => {
+    if (state.payoffTouched && state.effortTouched && !state.submitted) {
+      submit();
+    }
+  };
+
+  const setPayoff = (v, fromInteraction) => {
+    if (state.submitted) return;
+    if (fromInteraction) {
+      state.payoffTouched = true;
+      slider.classList.remove('untouched');
+      startTimerIfNeeded();
+    }
+    const min = state.payoffTouched ? 1 : 0;
+    v = Math.max(min, Math.min(10, v));
+    state.payoff = v;
+    fill.style.width = `${v * 10}%`;
+    if (fromInteraction) maybeAutoSubmit();
+  };
+
+  // Clicking the slider is focus-only — same effect as tabbing into it. Use keyboard to set value.
+  slider.addEventListener('pointerdown', (e) => {
+    if (state.submitted) return;
+    startTimerIfNeeded();
+    slider.focus();
+  });
+
+  const setEffort = (code, fromInteraction) => {
+    if (state.submitted) return;
+    state.effortCode = code;
+    effortBtns.forEach((b, i) => b.classList.toggle('selected', i + 1 === code));
+    if (fromInteraction) {
+      state.effortTouched = true;
+      startTimerIfNeeded();
+      maybeAutoSubmit();
+    }
+  };
+  effortBtns.forEach((b, i) => {
+    b.addEventListener('click', () => {
+      setEffort(i + 1, true);
+      state.phase = 'effort';
+    });
+  });
+
+  // Keyboard navigation: scoped to the block so it doesn't fight the textarea.
+  const keyHandler = (e) => {
+    if (state.submitted) return;
+    const k = e.key;
+    if (state.phase === 'payoff') {
+      if (k === 'ArrowRight' || k === 'ArrowUp') {
+        e.preventDefault();
+        const base = state.payoffTouched ? state.payoff : 0;
+        setPayoff(base + 1, true);
+      } else if (k === 'ArrowLeft' || k === 'ArrowDown') {
+        e.preventDefault();
+        const base = state.payoffTouched ? state.payoff : 1;
+        setPayoff(base - 1, true);
+      } else if (/^[0-9]$/.test(k)) {
+        e.preventDefault();
+        const n = parseInt(k, 10);
+        setPayoff(n === 0 ? 10 : n, true);
+      } else if (k === 'Enter') {
+        e.preventDefault();
+        state.phase = 'effort';
+        effortBtns[state.effortCode - 1].focus();
+      }
+    } else if (state.phase === 'effort') {
+      if (k === 'ArrowRight' || k === 'ArrowDown') {
+        e.preventDefault();
+        const next = Math.min(7, state.effortCode + 1);
+        setEffort(next, true);
+        effortBtns[next - 1].focus();
+      } else if (k === 'ArrowLeft' || k === 'ArrowUp') {
+        e.preventDefault();
+        const next = Math.max(1, state.effortCode - 1);
+        setEffort(next, true);
+        effortBtns[next - 1].focus();
+      } else if (/^[1-7]$/.test(k)) {
+        e.preventDefault();
+        const n = parseInt(k, 10);
+        setEffort(n, true);
+        effortBtns[n - 1].focus();
+      } else if (k === 'Enter') {
+        e.preventDefault();
+        submit();
+      }
+    }
+  };
+  block.addEventListener('keydown', keyHandler);
+
+  // Timer — always counting, visibility flips on at last 10s; expiry behavior depends on touched.
+  const tick = () => {
+    const elapsed = Date.now() - state.timerStart;
+    const remaining = Math.max(0, WINNOW_TIMER_TOTAL_MS - elapsed);
+    if (remaining <= WINNOW_TIMER_VISIBLE_MS && remaining > 0) {
+      timerEl.classList.add('show');
+      timerEl.innerHTML = `<span class="winnow-timer-pill">${Math.ceil(remaining / 1000)}s</span>`;
+    }
+    if (remaining <= 0) {
+      clearInterval(state.timerId);
+      state.timerId = null;
+      onTimerExpire();
+    }
+  };
+
+  const onTimerExpire = () => {
+    if (state.submitted) return;
+    if (!state.payoffTouched) {
+      // Reset: lock controls, require manual restart from the Begin button.
+      slider.style.pointerEvents = 'none';
+      effortBtns.forEach(b => b.style.pointerEvents = 'none');
+      slider.style.opacity = '0.4';
+      effortRow.style.opacity = '0.4';
+      effortLabel.classList.add('dim');
+      timerEl.classList.remove('show');
+      timerEl.classList.add('dim');
+      timerEl.textContent = '⏱ timed out — payoff was untouched, item reset';
+      block.removeEventListener('keydown', keyHandler);
+      showWinnowBeginButton();
+      return;
+    }
+    submit();
+  };
+
+  const submit = () => {
+    if (state.submitted) return;
+    state.submitted = true;
+    if (state.timerId) { clearInterval(state.timerId); state.timerId = null; }
+    timerEl.classList.remove('show');
+    timerEl.textContent = '';
+
+    const payoff = state.payoff;
+    const effortCode = state.effortCode;
+    const net = payoff - effortCode;
+
+    let outcome;
+    if (net >= 1) outcome = 'keep';
+    else if (net <= -2 && payoff < 5) outcome = 'abandon-auto';
+    else outcome = 'salvage-band';
+
+    winnowState.scores[winnowState.index] = { payoff, effortCode, net };
+
+    const res = document.createElement('div');
+    res.className = 'winnow-resolution';
+    const effortLbl = EFFORT_LABELS[effortCode - 1];
+    res.innerHTML = `payoff <b>${payoff}</b> • effort <b>${effortLbl}</b> (${effortCode}) • net <b>${net}</b>`;
+    block.insertBefore(res, actionsRow);
+
+    if (outcome === 'keep') {
+      const tag = document.createElement('div');
+      tag.innerHTML = '<span class="outcome keep">KEEP</span> — proceeds to annotate stage';
+      tag.style.marginTop = '6px';
+      res.appendChild(tag);
+      winnowState.decisions[winnowState.index] = 'keep';
+      addAdvanceButton();
+    } else if (outcome === 'abandon-auto') {
+      const tag = document.createElement('div');
+      tag.innerHTML = '<span class="outcome abandon">ABANDON</span> — date-stamp tag will be appended in source';
+      tag.style.marginTop = '6px';
+      res.appendChild(tag);
+      winnowState.decisions[winnowState.index] = 'abandon';
+      addAdvanceButton();
+    } else {
+      const tag = document.createElement('div');
+      tag.innerHTML = '<span class="outcome salvage-band">SALVAGE BAND</span> — pick one (↔ to navigate, Enter to choose):';
+      tag.style.marginTop = '6px';
+      res.appendChild(tag);
+
+      const salvageBtn = document.createElement('button');
+      salvageBtn.className = 'winnow-action-btn';
+      salvageBtn.textContent = 'Salvage → Dream Chores';
+      const abandonBtn = document.createElement('button');
+      abandonBtn.className = 'winnow-action-btn danger';
+      abandonBtn.textContent = 'Abandon';
+
+      const choose = (decision) => {
+        winnowState.decisions[winnowState.index] = decision;
+        winnowState.index += 1;
+        renderWinnowItem();
+      };
+      salvageBtn.addEventListener('click', () => choose('salvage'));
+      abandonBtn.addEventListener('click', () => choose('abandon'));
+
+      // Left/right arrow nav between the two; Enter clicks the focused button natively.
+      const salvageKeyHandler = (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (document.activeElement === abandonBtn) salvageBtn.focus();
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (document.activeElement === salvageBtn) abandonBtn.focus();
+        }
+      };
+      block.addEventListener('keydown', salvageKeyHandler);
+
+      actionsRow.appendChild(abandonBtn);
+      actionsRow.appendChild(salvageBtn);
+      setTimeout(() => abandonBtn.focus(), 0);
+    }
+  };
+
+  const addAdvanceButton = () => {
+    const isLast = winnowState.index === winnowState.items.length - 1;
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'winnow-action-btn primary';
+    nextBtn.textContent = isLast ? 'Finish winnow →' : 'Next item →';
+    nextBtn.addEventListener('click', () => {
+      winnowState.index += 1;
+      renderWinnowItem();
+    });
+    actionsRow.appendChild(nextBtn);
+    setTimeout(() => nextBtn.focus(), 0);
+  };
+
+  // Initial focus on the slider so digits and arrows work immediately.
+  setTimeout(() => slider.focus(), 0);
+}
+
+async function finishWinnow() {
+  addSys('Applying winnow decisions...');
+  try {
+    const stampDate = new Date().toISOString().slice(0, 10);
+    const parts = [winnowState.preamble];
+    const salvageEntries = [];
+    let kept = 0, abandoned = 0, salvaged = 0;
+
+    for (let i = 0; i < winnowState.items.length; i++) {
+      const itemSection = winnowState.items[i]; // includes leading "\n"
+      const decision = winnowState.decisions[i];
+      const score = winnowState.scores[i];
+      const effortLbl = score ? EFFORT_LABELS[score.effortCode - 1] : '?';
+
+      if (decision === 'keep' || !decision) {
+        parts.push(`# ${itemSection}`);
+        kept++;
+      } else if (decision === 'abandon') {
+        // Preserve leading "\n" from the section so the stored format stays "\n# \n<text>\n<stamp>\n".
+        const cleanSection = itemSection.replace(/\s+$/, '');
+        const stamp = `<span class="date-stamp">abandoned on ${stampDate} • payoff = ${score.payoff} • effort = ${effortLbl} • net value = ${score.net}</span>`;
+        parts.push(`# ${cleanSection}\n${stamp}\n`);
+        abandoned++;
+      } else if (decision === 'salvage') {
+        const trimmed = itemSection.trim();
+        const sourceTitle = selectedFile.replace('.md','');
+        const stamp = `<span class="date-stamp">salvaged on ${stampDate} from [[${sourceTitle}]] • payoff = ${score.payoff} • effort = ${effortLbl}</span>`;
+        salvageEntries.push(`# \n${trimmed}\n${stamp}`);
+        salvaged++;
+      }
+    }
+
+    const rebuilt = parts.join('');
+
+    // Write modified source note.
+    const w = await obsidian(`CAPTURE/${selectedFile}`, { method: 'PUT', body: rebuilt });
+    if (!w.ok) {
+      const errText = await w.text();
+      throw new Error(`Source note write failed: HTTP ${w.status} — ${errText}`);
+    }
+
+    // Append salvage entries to the dedicated note (POST = append; creates file if missing).
+    if (salvageEntries.length > 0) {
+      const salvageBody = '\n' + salvageEntries.join('\n');
+      const s = await obsidian(SALVAGE_NOTE_PATH, { method: 'POST', body: salvageBody });
+      if (!s.ok) {
+        const errText = await s.text();
+        addMsg('assistant', `WARNING: salvage append failed (HTTP ${s.status} — ${errText}). ${salvaged} salvaged item(s) were NOT moved to ${SALVAGE_NOTE_PATH}. The source note WAS updated, so those items are gone from CAPTURE. You'll need to recover them manually from this list:\n\n${salvageEntries.join('\n\n---\n\n')}`);
+      }
+    }
+
+    addSys(`Winnow complete: ${kept} kept · ${abandoned} abandoned · ${salvaged} salvaged`);
+
+    winnowState = null;
+    // Return to triage panel; Annotate is now unlocked.
+    triagePanel.classList.add('visible');
+    chat.style.display = 'none';
+    triageStatus.textContent = `Winnow done (${kept} kept · ${abandoned} abandoned · ${salvaged} salvaged). Click Annotate when ready.`;
+    annotateBtn.disabled = false;
+  } catch(e) {
+    addMsg('assistant', `error at finishWinnow: ${e.message}\n${e.stack || ''}`);
+    triageStatus.textContent = 'Winnow finish failed — see chat for details.';
+    winnowBtn.disabled = false;
+  }
+}
+// ── End winnow ───────────────────────────────────────────────────────────────
+
+init();
+</script>
+</body>
+</html>
